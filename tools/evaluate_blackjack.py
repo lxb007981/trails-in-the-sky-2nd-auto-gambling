@@ -4,8 +4,8 @@ from collections import Counter
 import json
 import math
 import random
-from blackjack_rules import RANKS, hand, payout
-from blackjack_strategy import Strategy
+from casino.games.blackjack.rules import RANKS, hand, payout
+from casino.games.blackjack.strategy import Strategy
 
 
 def simulate(rounds=100000, seed=20261022, dealer_stand=17, special_ties=True):

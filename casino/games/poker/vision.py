@@ -5,51 +5,10 @@ import cv2
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).parent
-ASSETS = ROOT / 'assets'
+from casino.common.paths import ROOT, ASSETS
+from casino.common.vision import RecognitionError, rgb, crop, ink, normalize, segments, match
+from casino.common.templates import load_templates
 XS = [280, 418, 555, 693, 830]
-
-class RecognitionError(RuntimeError):
-    pass
-
-def rgb(im):
-    return np.asarray(im.convert('RGB')) if isinstance(im, Image.Image) else im
-
-def crop(im, box):
-    x1, y1, x2, y2 = box
-    return rgb(im)[y1:y2, x1:x2]
-
-def ink(im):
-    return (cv2.cvtColor(rgb(im), cv2.COLOR_RGB2GRAY) < 165).astype(np.uint8)
-
-def normalize(mask):
-    ys, xs = np.where(mask)
-    if not len(xs):
-        raise RecognitionError('Empty glyph')
-    trimmed = mask[ys.min():ys.max()+1, xs.min():xs.max()+1]
-    height,width = trimmed.shape
-    scale = min(22/width,30/height)
-    resized = cv2.resize(trimmed.astype(np.float32),
-                         (max(1,round(width*scale)),max(1,round(height*scale))),
-                         interpolation=cv2.INTER_AREA)
-    out = np.zeros((32,24),np.float32)
-    h,w = resized.shape
-    y,x = (32-h)//2,(24-w)//2
-    out[y:y+h,x:x+w] = resized
-    return out
-
-def segments(mask):
-    active = np.any(mask, axis=0)
-    edges = np.diff(np.r_[False, active, False].astype(int))
-    return [mask[:, a:b] for a, b in zip(np.where(edges == 1)[0], np.where(edges == -1)[0])]
-
-def match(mask, templates, threshold=.20, margin=.045):
-    glyph = normalize(mask)
-    scores = sorted((min(float(np.mean(np.abs(glyph-t))) for t in ts), label)
-                    for label, ts in templates.items())
-    if not scores or scores[0][0] > threshold or (len(scores)>1 and scores[1][0]-scores[0][0]<margin):
-        raise RecognitionError(f'Uncertain glyph: {scores[:3]}')
-    return scores[0][1], scores[0][0]
 
 def rank_mask(im, i):
     mask = ink(crop(im, (XS[i], 354, XS[i]+38, 381)))
@@ -73,13 +32,7 @@ def suit_mask(im, i):
 
 class Vision:
     def __init__(self):
-        self.templates = {}
-        for kind in ('ranks', 'suits', 'digits'):
-            d = {}
-            for p in (ASSETS / kind).glob('*.npy'):
-                label = p.stem.split('_')[0]
-                d.setdefault(label, []).append(np.load(p))
-            self.templates[kind] = d
+        self.templates = load_templates(ASSETS)
         self.refs = {}
         try:
             folder = ASSETS / 'states'
@@ -101,7 +54,7 @@ class Vision:
             if set(self.refs) != expected:
                 raise ValueError('Missing or unexpected state references')
         except (OSError, ValueError, KeyError, TypeError) as e:
-            raise RecognitionError(f'Invalid state assets; run build_assets.py: {e}') from e
+            raise RecognitionError(f'Invalid state assets; run python -m tools.build_poker_assets: {e}') from e
 
     def score(self, im, name):
         return min(float(np.mean(np.abs(crop(im, box).astype(float)-ref)))/255

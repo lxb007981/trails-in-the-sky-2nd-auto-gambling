@@ -2,7 +2,7 @@
 import cv2
 import numpy as np
 from PIL import Image
-from vision import match, RecognitionError
+from casino.common.vision import match, RecognitionError
 
 
 def rotated(im):

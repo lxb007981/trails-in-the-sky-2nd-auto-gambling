@@ -4,9 +4,9 @@ import json
 import math
 from pathlib import Path
 import time
-from game_window import GameWindow, Stopped, RunLock
-from vision import Vision, RecognitionError, ROOT
-from poker import Strategy, parse_card, categories, PAYOUTS
+from casino.common.window import GameWindow, Stopped, RunLock
+from casino.games.poker.vision import Vision, RecognitionError, ROOT
+from casino.games.poker.strategy import Strategy, parse_card, categories, PAYOUTS
 
 class Bot:
     def __init__(self, game, logdir=None, wheel=True):
@@ -14,7 +14,7 @@ class Bot:
         self.game, self.vision = game, Vision()
         for kind, expected in [('ranks',set('23456789TJQKA')),('suits',set('CDHS')),('digits',set('0123456789'))]:
             if set(self.vision.templates[kind]) != expected:
-                raise RecognitionError(f'Missing {kind} templates; run build_assets.py')
+                raise RecognitionError(f'Missing {kind} templates; run python -m tools.build_poker_assets')
         self.strategy = Strategy(wheel=wheel)
         self.wheel = wheel
         self.logdir = Path(logdir or ROOT/'logs'/time.strftime('%Y%m%d_%H%M%S'))

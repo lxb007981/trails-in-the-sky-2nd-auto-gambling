@@ -1,7 +1,7 @@
 import unittest
 from itertools import combinations
 import numpy as np
-from poker import Strategy, categories, parse_card, PAYOUTS
+from casino.games.poker.strategy import Strategy, categories, parse_card, PAYOUTS
 
 class PokerTests(unittest.TestCase):
     @classmethod

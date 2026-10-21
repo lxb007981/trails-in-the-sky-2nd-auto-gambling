@@ -1,5 +1,69 @@
 空之轨迹 2nd 梭哈 / 21 点自动化（Python / Windows）
 
+项目目录（2026-10-22 整理）
+
+业务实现按“公共能力 / 玩法 / 开发工具 / 测试”归类。统一从项目根目录通过
+`python -m 包模块` 启动；已移除根目录 Python 兼容脚本和 PowerShell 启动器。
+角子机和轮盘目前仅预留包目录，尚未实现识别、规则或自动操作。
+
+```text
+casino/
+  common/
+    paths.py                 # 统一项目根目录、资源路径
+    window.py                # Win32 窗口、截图、按键、F8、进程互斥
+    vision.py                # 裁剪、二值化、字形归一化与匹配
+    templates.py             # 公共牌面、花色、数字模板加载
+  games/
+    poker/
+      bot.py                 # 梭哈状态机、计时、结算对账
+      vision.py              # 梭哈界面、五张牌、HOLD、光标识别
+      strategy.py            # 梭哈牌型、赔率、换牌期望值计算
+    blackjack/
+      bot.py                 # 21 点状态机、计时、结算对账
+      vision.py              # 21 点界面、点数、金额识别
+      cards.py               # 旋转牌角识别
+      rules.py               # 点数、奖励牌型、结算规则
+      strategy.py            # Hit / Stand / Double Down 决策
+    slots/__init__.py        # 角子机，待实现
+    roulette/__init__.py     # 轮盘，待实现
+tools/
+  capture_game.py            # 开发用截图及单步操作
+  build_poker_assets.py      # 梭哈及公共字形资源构建
+  build_blackjack_assets.py  # 21 点资源构建
+  evaluate_blackjack.py      # 21 点离线模拟
+tests/
+  common/test_safety.py
+  poker/test_poker.py
+  poker/test_vision.py
+  poker/test_limits.py
+  blackjack/test_blackjack.py
+assets/                     # 运行资源（继续保留既有路径）
+  ranks/、suits/、digits/    # 两种牌类玩法共用字形
+  states/                   # 梭哈专属状态参考
+  blackjack/                # 21 点专属状态参考与补充字形
+captures/                   # 构建原图、规则页和回归截图，PNG 使用 Git LFS
+validation/                 # 精选实机验收证据
+logs/                       # 本地运行日志与截图，忽略提交
+cache/                      # 本地梭哈组合缓存，忽略提交
+docs/plans/                 # 历史实现计划
+```
+
+`labels.json` 是梭哈训练标注；`observations.json` 是早期梭哈采集记录。
+`validation_report.json` 和 `blackjack_validation_report.json` 分别记录两种玩法的历史验证。
+这些数据、资源与报告保留原路径，历史日志和计划中的文件名按当时版本理解。
+
+依赖方向为：玩法和工具调用公共模块，公共模块不依赖具体玩法。
+21 点直接加载公共字形，不再实例化梭哈 Vision，也不再要求梭哈 `assets/states/`。
+各玩法独立维护状态机、画面坐标和结算规则。角子机与轮盘后续分别在对应包内添加
+`bot.py`、`vision.py`、`rules.py`，需要决策计算时再添加 `strategy.py`；
+其资源放入 `assets/slots/`、`assets/roulette/`，测试放入对应 `tests/` 子包。
+新玩法沿用公共窗口控制与同一进程互斥锁；不要从梭哈或 21 点模块导入通用能力。
+
+开发时使用包路径导入。所有命令均在项目根目录执行，例如 `python -m casino.games.poker.bot`、
+`python -m casino.games.blackjack.bot`、`python -m tools.evaluate_blackjack`。
+测试命令仍为 `.\.venv\Scripts\python.exe -m unittest -v`。
+本次目录调整前后 57 项离线测试均通过；本次未做游戏实机操作。
+
 21 点入口（2026-10-22）
 57 项测试通过（含 30 项 21 点测试及原梭哈回归）。最新实机每局 100 枚运行 10 分钟，
 连续完成 22 局，余额 47161 → 67061，净增 19900；到时完成当前局，610.95 秒返回开始菜单。
@@ -16,11 +80,9 @@
 同时补齐旋转黑桃、红桃 5 及白色结算数字字形，识别置信阈值保持不变。
 庄家明牌 A 按 11 点校验；灰色爆牌点数排除从边缘进入的白色牌角干扰。
 
-  .\.venv\Scripts\python.exe blackjack_bot.py --run --focus --minutes 30 --bet 100
-或：
-  .\run_blackjack.ps1 -Minutes 30 -Bet 100
+  .\.venv\Scripts\python.exe -m casino.games.blackjack.bot --run --focus --minutes 30 --bet 100
 仅分析画面：
-  .\.venv\Scripts\python.exe blackjack_bot.py --focus
+  .\.venv\Scripts\python.exe -m casino.games.blackjack.bot --focus
 
 在 21 点“开始”已选中的菜单、下注提示、继续提示或下注弹窗启动。
 窗口标题和尺寸要求与下方梭哈说明一致：1280×720，游戏保持前台。
@@ -32,9 +94,9 @@
 梭哈与 21 点共用进程互斥锁，不能同时运行。
 
 21 点实现与规则
-blackjack_bot.py 是独立状态机；blackjack_vision.py/blackjack_cards.py 负责
-状态、旋转牌角、张数与点数识别；blackjack_rules.py/blackjack_strategy.py
-负责赔率与决策。既有梭哈入口 bot.py 不变。
+casino/games/blackjack/ 下的 bot.py 是独立状态机；vision.py/cards.py 负责
+状态、旋转牌角、张数与点数识别；rules.py/strategy.py 负责赔率与决策。
+使用对应包内的 bot 模块启动。
 支持 Hit、Stand、Double Down；加倍只在初始两张且余额足够时考虑。
 已按游戏内表实现普通胜 2 倍、黑杰克 3 倍、方块 Q+A 10 倍、
 黑桃 J+A 50 倍、三张 7 为 100 倍、六张不爆 120 倍、七张不爆 250 倍。
@@ -50,7 +112,7 @@ blackjack_bot.py 是独立状态机；blackjack_vision.py/blackjack_cards.py 负
 游戏使用单副 52 张牌，本策略是近似策略，不是无放回抽牌的精确最优解。
 程序仅使用画面可见信息，不读写游戏内存或存档。
 可复现收益模拟：
-  .\.venv\Scripts\python.exe evaluate_blackjack.py --rounds 100000
+  .\.venv\Scripts\python.exe -m tools.evaluate_blackjack --rounds 100000
 模拟每局重新洗一副 52 张牌，使用实际策略；输出均值、置信区间和奖励分布。
 模拟依赖上述规则和洗牌假设，不能当作游戏实测收益或保证每局获利。
 
@@ -59,11 +121,11 @@ blackjack_bot.py 是独立状态机；blackjack_vision.py/blackjack_cards.py 负
 日志在 logs/blackjack_日期时间/，包括每步截图、决策期望值、结算倍率、
 逐局余额和总收益。最后一局完成后保存 final_menu.png；异常保存 stopped.png。
 开发截图与规则页见 captures/bj_*.png（Git LFS）；重建局部资源：
-  .\.venv\Scripts\python.exe build_blackjack_assets.py
+  .\.venv\Scripts\python.exe -m tools.build_blackjack_assets
 测试包含识别回归、状态等待、100 枚快捷键核验、赔率和计时对账：
   .\.venv\Scripts\python.exe -m unittest -v
 
-以下为原梭哈入口使用说明。
+以下为梭哈使用说明。
 
 验证记录（2026-10-21）
 当前版本改为按指定时长运行，移除了局数、止盈和止损参数。
@@ -87,14 +149,10 @@ logs/runtime_without_captures/logs/20261021_233857/。
 同一时间只允许一个自动操作进程运行。
 
 当前机器的依赖已装到 .venv，直接运行：
-  .\.venv\Scripts\python.exe bot.py --run --focus --minutes 30 --bet 10
-
-可选 PowerShell 启动器：
-  .\run_bot.ps1 -Minutes 30 -Bet 10
-若系统禁止运行 ps1，使用上面的 Python 命令即可。
+  .\.venv\Scripts\python.exe -m casino.games.poker.bot --run --focus --minutes 30 --bet 10
 
 较长运行示例：
-  .\.venv\Scripts\python.exe bot.py --run --focus --minutes 120 --bet 10
+  .\.venv\Scripts\python.exe -m casino.games.poker.bot --run --focus --minutes 120 --bet 10
 默认运行 15 分钟，每局 10 枚。不设局数、止盈或止损条件。
 --minutes 支持正数小数，例如 --minutes 0.5 表示 30 秒；不接受无穷或 NaN。
 程序在下注窗口连按两次 A 快速选到 10，并读取余额差额确认金额；
@@ -106,15 +164,15 @@ logs/runtime_without_captures/logs/20261021_233857/。
 正常结束回到开始菜单。异常时保存截图和原因，然后停止。
 --focus 仅在启动时前置窗口，循环期间不会反复抢回焦点。
 没有 --run 时只分析当前界面，不发送游戏按键：
-  .\.venv\Scripts\python.exe bot.py --focus
+  .\.venv\Scripts\python.exe -m casino.games.poker.bot --focus
 
 安装（换机器时）
   python -m venv .venv
   .\.venv\Scripts\python.exe -m pip install --only-binary=:all: -r requirements.txt
-运行仅需 bot.py、game_window.py、poker.py、vision.py、requirements.txt 和完整 assets/。
+运行分发须包含完整 casino/ 包、requirements.txt 和完整 assets/。
 assets/ 包含牌面/数字模板以及 states/ 中的 12 张局部状态参考图和 manifest.json，
 状态参考资源合计约 109 KiB。运行时不需要 captures/，也不需要下载 LFS 完整截图。
-run_bot.ps1 是可选启动器。assets/ 必须与 Python 源码放在同一目录下。
+assets/ 必须与 casino/ 包位于同一个项目根目录。
 首次策略计算自动在 cache/ 建立约 18 MB 的组合缓存。
 
 策略与核对
@@ -141,11 +199,13 @@ assets/ 为运行资源；captures/ 仅保留构建、规则和回归样本进�
 validation/ 保存精选实机验收证据；logs/、临时截图、cache/ 与 .venv/ 仅保留在本地。
 
   .\.venv\Scripts\python.exe -m unittest -v
-  .\.venv\Scripts\python.exe poker.py 2S 5H 3D 3H 6H
+  .\.venv\Scripts\python.exe -m casino.games.poker.strategy 2S 5H 3D 3H 6H
 牌面编码：T=10、C=梅花、D=方块、H=红桃、S=黑桃。
 完整 captures/ 仅用于测试、模板重建和规则记录，使用 Git LFS 保存。
 开发前安装 Git LFS 并运行 git lfs pull 下载完整截图。
-labels.json 标注采集图，build_assets.py 从这些标注生成模板，
+labels.json 标注采集图，tools/build_poker_assets.py 从这些标注生成模板，
 并按 STATE_REFERENCES 的坐标提取 assets/states/ 局部参考图。
-修改标签后运行：.\.venv\Scripts\python.exe build_assets.py
-capture_game.py 是开发用的单步采集工具，会主动前置游戏窗口。
+修改标签后运行：.\.venv\Scripts\python.exe -m tools.build_poker_assets
+tools/capture_game.py 是开发用的单步采集工具，会主动前置游戏窗口。
+采集命令：.\.venv\Scripts\python.exe -m tools.capture_game 样本名称
+离线识别：.\.venv\Scripts\python.exe -m casino.games.poker.vision captures/007_hand.png

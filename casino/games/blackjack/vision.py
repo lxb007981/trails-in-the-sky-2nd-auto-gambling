@@ -3,15 +3,16 @@ import json
 import cv2
 import numpy as np
 from PIL import Image
-from vision import ROOT, crop, rgb, segments, match, ink, RecognitionError, Vision
-from blackjack_cards import read_cards
-from blackjack_rules import hand
+from casino.common.paths import ROOT, ASSETS
+from casino.common.vision import crop, rgb, segments, match, ink, RecognitionError
+from casino.common.templates import load_templates
+from casino.games.blackjack.cards import read_cards
+from casino.games.blackjack.rules import hand
 
 
 class BlackjackVision:
     def __init__(self):
-        self.base = Vision()
-        self.templates = self.base.templates
+        self.templates = load_templates(ASSETS)
         folder = ROOT/'assets'/'blackjack'
         for path in folder.glob('*_rotated.npy'):
             self.templates['suits'].setdefault(path.stem.split('_')[0],[]).append(np.load(path))
@@ -177,4 +178,6 @@ class BlackjackVision:
         return result
 
     def start_selected(self, im):
-        return self.base.start_selected(im)
+        region = crop(im,(595,308,685,331))
+        yellow = (region[:,:,0]>190)&(region[:,:,1]>160)&(region[:,:,2]<130)
+        return float(yellow.mean())>.4

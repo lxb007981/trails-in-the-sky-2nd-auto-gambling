@@ -6,7 +6,7 @@ Special initial suits are evaluated by the rules module; future bonuses depend
 on count and sevens. Dealer threshold and special ties are configurable.
 """
 from functools import lru_cache
-from blackjack_rules import hand, bonus, value, total_from_low
+from casino.games.blackjack.rules import hand, bonus, value, total_from_low
 
 DRAWS = tuple((n, (4 if n == 10 else 1)/13) for n in range(1,11))
 

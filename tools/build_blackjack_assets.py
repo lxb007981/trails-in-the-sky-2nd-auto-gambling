@@ -3,10 +3,10 @@ import json
 from pathlib import Path
 from PIL import Image
 import numpy as np
-from blackjack_cards import rotated
-from vision import normalize, crop, segments
+from casino.games.blackjack.cards import rotated
+from casino.common.vision import normalize, crop, segments
 
-ROOT = Path(__file__).parent
+from casino.common.paths import ROOT
 REFERENCES = {
     'menu': ('bj_033_menu', (574, 335, 709, 428)),
     'bet': ('bj_031_bet', (480, 245, 615, 470)),

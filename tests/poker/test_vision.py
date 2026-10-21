@@ -1,6 +1,6 @@
 import unittest
 from PIL import Image
-from vision import Vision, ROOT, RecognitionError
+from casino.games.poker.vision import Vision, ROOT, RecognitionError
 from unittest.mock import patch
 import tempfile
 import shutil
@@ -22,8 +22,8 @@ class VisionTests(unittest.TestCase):
                 self.assertEqual(self.v.state(self.im(file)),state)
 
     def test_state_assets_match_original_pixels(self):
-        from build_assets import STATE_REFERENCES
-        from vision import crop
+        from tools.build_poker_assets import STATE_REFERENCES
+        from casino.games.poker.vision import crop
         offsets = {}
         for name,source,box in STATE_REFERENCES:
             index = offsets.get(name,0)
@@ -38,7 +38,7 @@ class VisionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(ROOT/'assets',root/'assets')
-            with patch('vision.ROOT',root), patch('vision.ASSETS',root/'assets'):
+            with patch('casino.games.poker.vision.ROOT',root), patch('casino.games.poker.vision.ASSETS',root/'assets'):
                 v = Vision()
                 self.assertFalse((root/'captures').exists())
                 self.assertEqual(v.state(menu),'menu')
@@ -89,13 +89,13 @@ class VisionTests(unittest.TestCase):
         self.assertFalse(self.v.start_selected(self.im('015_s')))
 
     def test_result_gate_skips_unfinished_flash(self):
-        from bot import Bot
+        from casino.games.poker.bot import Bot
         from unittest.mock import MagicMock, patch
         bot = Bot.__new__(Bot)
         bot.vision = self.v
         bot.game = MagicMock()
         bot.game.grab.side_effect = [self.im('064_live')]*3+[self.im('063_result')]*3
-        with patch('bot.time.sleep'):
+        with patch('casino.games.poker.bot.time.sleep'):
             _,cards = bot.wait({'result'},predicate=lambda im:self.v.hand(im)[0])
         self.assertEqual(cards,['TS','7D','5D','TD','5C'])
         self.assertEqual(bot.game.grab.call_count,6)

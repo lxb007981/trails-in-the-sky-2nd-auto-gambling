@@ -3,6 +3,7 @@ from itertools import combinations, chain
 from math import comb
 from pathlib import Path
 import numpy as np
+from casino.common.paths import ROOT
 
 RANKS = '23456789TJQKA'
 SUITS = 'CDHS'
@@ -47,7 +48,7 @@ class Strategy:
     assuming the five initially dealt cards cannot be drawn again.
     """
     def __init__(self, cache_dir=None, wheel=True):
-        cache_dir = Path(cache_dir or Path(__file__).parent / 'cache')
+        cache_dir = Path(cache_dir or ROOT / 'cache')
         cache_dir.mkdir(exist_ok=True)
         path = cache_dir / 'all_hands_v1.npy'
         if not path.exists():

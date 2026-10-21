@@ -5,11 +5,12 @@ import json
 import math
 from pathlib import Path
 import time
-from game_window import GameWindow, RunLock, Stopped
-from vision import ROOT, RecognitionError, crop
-from blackjack_vision import BlackjackVision
-from blackjack_strategy import Strategy
-from blackjack_rules import payout, RATES, hand
+from casino.common.window import GameWindow, RunLock, Stopped
+from casino.common.paths import ROOT
+from casino.common.vision import RecognitionError, crop
+from casino.games.blackjack.vision import BlackjackVision
+from casino.games.blackjack.strategy import Strategy
+from casino.games.blackjack.rules import payout, RATES, hand
 
 
 class BlackjackBot:

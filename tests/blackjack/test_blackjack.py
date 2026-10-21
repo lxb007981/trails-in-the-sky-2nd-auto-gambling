@@ -7,11 +7,12 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 from PIL import Image
-from blackjack_rules import hand, bonus, payout
-from blackjack_strategy import Strategy, DRAWS
-from blackjack_vision import BlackjackVision
-from blackjack_bot import BlackjackBot
-from vision import ROOT, RecognitionError
+from casino.games.blackjack.rules import hand, bonus, payout
+from casino.games.blackjack.strategy import Strategy, DRAWS
+from casino.games.blackjack.vision import BlackjackVision
+from casino.games.blackjack.bot import BlackjackBot
+from casino.common.paths import ROOT
+from casino.common.vision import RecognitionError
 
 
 class RulesTests(unittest.TestCase):
@@ -133,12 +134,13 @@ class VisionTests(unittest.TestCase):
     def test_runtime_without_captures(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for name in ('vision.py','blackjack_vision.py','blackjack_cards.py','blackjack_rules.py'):
-                shutil.copyfile(ROOT/name,root/name)
+            shutil.copytree(ROOT/'casino', root/'casino',
+                            ignore=shutil.ignore_patterns('__pycache__'))
             shutil.copytree(ROOT/'assets',root/'assets')
+            shutil.rmtree(root/'assets'/'states')
             self.sample('bj_022_hit').save(root/'sample.png')
             result = subprocess.run([sys.executable,'-c',
-                'from blackjack_vision import *; v=BlackjackVision(); '
+                'from casino.games.blackjack.vision import *; v=BlackjackVision(); '
                 'assert v.observation(Image.open("sample.png")) == (("4D","TH","6D"),"QC")'],
                 cwd=root,capture_output=True,text=True,timeout=30)
             self.assertEqual(result.returncode,0,result.stderr)
@@ -195,7 +197,7 @@ class ControlTests(unittest.TestCase):
 
     def test_duration_rechecked_after_bet_adjustment(self):
         b = self.bot()
-        with patch('blackjack_bot.time.monotonic',side_effect=[0,0,61,62]):
+        with patch('casino.games.blackjack.bot.time.monotonic',side_effect=[0,0,61,62]):
             b.run(1,1)
         b.press.assert_not_called()
         b.finish.assert_called_once()
@@ -203,14 +205,14 @@ class ControlTests(unittest.TestCase):
     def test_finishes_current_round(self):
         b = self.bot()
         b.to_bet.side_effect = [(1000,1),(999,1)]
-        with patch('blackjack_bot.time.monotonic',side_effect=[0,0,0,61,62]):
+        with patch('casino.games.blackjack.bot.time.monotonic',side_effect=[0,0,0,61,62]):
             b.run(1,1)
         b.play_hand.assert_called_once()
         b.finish.assert_called_once()
 
     def test_balance_mismatch_stops(self):
         b = self.bot()
-        with patch('blackjack_bot.time.monotonic',return_value=0):
+        with patch('casino.games.blackjack.bot.time.monotonic',return_value=0):
             with self.assertRaisesRegex(RecognitionError,'Balance mismatch'):
                 b.run(1,1)
         b.finish.assert_not_called()
@@ -261,13 +263,13 @@ class ControlTests(unittest.TestCase):
         b.vision = Mock()
         b.vision.state.return_value = 'hand'
         values = iter([('old',),None,('new',),('new',),('new',)])
-        with patch('blackjack_bot.time.sleep'):
+        with patch('casino.games.blackjack.bot.time.sleep'):
             _,_,result = BlackjackBot.wait(b,{'hand'},lambda im,s:next(values))
         self.assertEqual(result,('new',))
         self.assertEqual(b.game.grab.call_count,5)
 
     def test_wait_logs_recognition_error_before_focus_loss(self):
-        from game_window import Stopped
+        from casino.common.window import Stopped
         b = self.bot()
         b.game = Mock()
         im = Image.new('RGB',(1280,720))
@@ -275,7 +277,7 @@ class ControlTests(unittest.TestCase):
         b.vision = Mock()
         b.vision.state.return_value = 'dialog'
         predicate = Mock(side_effect=RecognitionError('Uncertain final hand'))
-        with patch('blackjack_bot.time.sleep'):
+        with patch('casino.games.blackjack.bot.time.sleep'):
             with self.assertRaises(Stopped):
                 BlackjackBot.wait(b,{'dialog'},predicate)
         b.event.assert_called_once_with('recognition_wait',state='dialog',

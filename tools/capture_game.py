@@ -3,7 +3,7 @@ import argparse
 import ctypes as c
 from ctypes import wintypes as w
 import json
-from pathlib import Path
+from casino.common.paths import ROOT
 import time
 from PIL import ImageGrab
 
@@ -52,7 +52,7 @@ def capture(label, key=None, click=None):
     p = w.POINT(0, 0)
     u.ClientToScreen(h, c.byref(p))
     box = (p.x, p.y, p.x+r.right, p.y+r.bottom)
-    out = Path('captures')
+    out = ROOT / 'captures'
     out.mkdir(exist_ok=True)
     path = out / (label+'.png')
     ImageGrab.grab(bbox=box, all_screens=True).save(path)

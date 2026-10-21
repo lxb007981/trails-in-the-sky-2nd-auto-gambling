@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import game_window
-from game_window import GameWindow, Stopped
+from casino.common import window as game_window
+from casino.common.window import GameWindow, Stopped
 
 class InputSafetyTests(unittest.TestCase):
     def game(self):

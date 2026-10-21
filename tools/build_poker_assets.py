@@ -2,7 +2,7 @@
 import json
 from PIL import Image
 import numpy as np
-from vision import ROOT, ASSETS, rank_mask, suit_mask, normalize, ink, crop, segments
+from casino.games.poker.vision import ROOT, ASSETS, rank_mask, suit_mask, normalize, ink, crop, segments
 
 STATE_REFERENCES = [
     ('menu', '042_final_menu', (565,282,718,437)),
