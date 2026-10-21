@@ -1,0 +1,135 @@
+{
+  "007_hand": [
+    "JC",
+    "6H",
+    "JH",
+    "8H",
+    "TS"
+  ],
+  "009_hold_jc": [
+    "6S",
+    "8C",
+    "3H",
+    "5S",
+    "7S"
+  ],
+  "028_hand": [
+    "2S",
+    "5H",
+    "3D",
+    "3H",
+    "6H"
+  ],
+  "037_changed": [
+    "JD",
+    "TC",
+    "3D",
+    "3H",
+    "QS"
+  ],
+  "053_hand_ready": [
+    "TS",
+    "4D",
+    "2H",
+    "4C",
+    "2C"
+  ],
+  "054_debug": [
+    "KD",
+    "4D",
+    "2H",
+    "4C",
+    "2C"
+  ],
+  "059_new_hand": [
+    "4S",
+    "2S",
+    "8H",
+    "QC",
+    "5H"
+  ],
+  "060_live": [
+    "KC",
+    "2D",
+    "8H",
+    "TC",
+    "5H"
+  ],
+  "061_live": [
+    "5C",
+    "6S",
+    "JD",
+    "7C",
+    "9C"
+  ],
+  "062_new_hand": [
+    "TS",
+    "AH",
+    "JD",
+    "TD",
+    "7S"
+  ],
+  "validated_01_initial": [
+    "QC",
+    "AD",
+    "TD",
+    "KH",
+    "8S"
+  ],
+  "validated_01_result": [
+    "5H",
+    "AD",
+    "TD",
+    "AH",
+    "KC"
+  ],
+  "validated_02_initial": [
+    "QS",
+    "KD",
+    "KC",
+    "8S",
+    "9D"
+  ],
+  "validated_02_result": [
+    "6D",
+    "KD",
+    "KC",
+    "6S",
+    "JH"
+  ],
+  "validated_03_initial": [
+    "5C",
+    "3H",
+    "AH",
+    "JH",
+    "AD"
+  ],
+  "validated_03_result": [
+    "KD",
+    "9S",
+    "AH",
+    "TD",
+    "AD"
+  ],
+  "validated_04_initial": [
+    "5D",
+    "3S",
+    "8H",
+    "5S",
+    "2S"
+  ],
+  "validated_04_result": [
+    "5D",
+    "KH",
+    "AH",
+    "5S",
+    "AD"
+  ],
+  "065_status": [
+    "3C",
+    "4D",
+    "AD",
+    "6D",
+    "KS"
+  ]
+}

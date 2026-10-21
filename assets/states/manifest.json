@@ -1,0 +1,122 @@
+[
+  {
+    "name": "menu",
+    "file": "menu_042_final_menu.png",
+    "box": [
+      565,
+      282,
+      718,
+      437
+    ]
+  },
+  {
+    "name": "bet",
+    "file": "bet_005_bet.png",
+    "box": [
+      480,
+      200,
+      810,
+      235
+    ]
+  },
+  {
+    "name": "bet_prompt",
+    "file": "bet_prompt_004_rules.png",
+    "box": [
+      248,
+      61,
+      550,
+      121
+    ]
+  },
+  {
+    "name": "bet_prompt",
+    "file": "bet_prompt_011_continue.png",
+    "box": [
+      248,
+      61,
+      550,
+      121
+    ]
+  },
+  {
+    "name": "deposit",
+    "file": "deposit_006_deal.png",
+    "box": [
+      248,
+      61,
+      480,
+      88
+    ]
+  },
+  {
+    "name": "cancel",
+    "file": "cancel_013_cancel.png",
+    "box": [
+      248,
+      61,
+      475,
+      88
+    ]
+  },
+  {
+    "name": "win_dialog",
+    "file": "win_dialog_038_win.png",
+    "box": [
+      248,
+      61,
+      378,
+      120
+    ]
+  },
+  {
+    "name": "loss_dialog",
+    "file": "loss_dialog_010_loss.png",
+    "box": [
+      248,
+      61,
+      478,
+      88
+    ]
+  },
+  {
+    "name": "hand",
+    "file": "hand_007_hand.png",
+    "box": [
+      1032,
+      512,
+      1200,
+      542
+    ]
+  },
+  {
+    "name": "hand",
+    "file": "hand_031_hold4.png",
+    "box": [
+      1060,
+      512,
+      1200,
+      542
+    ]
+  },
+  {
+    "name": "settlement",
+    "file": "settlement_038_win.png",
+    "box": [
+      449,
+      389,
+      893,
+      415
+    ]
+  },
+  {
+    "name": "dialog_panel",
+    "file": "dialog_panel_054_debug.png",
+    "box": [
+      224,
+      48,
+      245,
+      90
+    ]
+  }
+]

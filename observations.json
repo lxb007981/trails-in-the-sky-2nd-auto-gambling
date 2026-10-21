@@ -1,0 +1,59 @@
+{
+  "window_title": "Trails in the Sky 2nd Chapter",
+  "client_size": [1280, 720],
+  "high_speed_mode": true,
+  "initial_medals": 403,
+  "final_medals": 403,
+  "sample_rounds": 2,
+  "bet_range": [1, 10],
+  "deck_size": 52,
+  "jokers": false,
+  "draw_count": 1,
+  "payout_total_multiplier": {
+    "no_pair": 0, "one_pair": 2, "two_pair": 3,
+    "three_of_a_kind": 4, "straight": 8, "flush": 10,
+    "full_house": 15, "four_of_a_kind": 50,
+    "straight_flush": 100, "royal_flush": 1000
+  },
+  "controls_observed": {
+    "menu_up_down": ["w", "s"],
+    "card_left_right": ["a", "d"],
+    "confirm_toggle_hold": "enter",
+    "cancel": "escape",
+    "change_to_card5": "a",
+    "card5_to_change": "d",
+    "arrow_keys": "No observed navigation in tested states",
+    "mouse_click": "Clicked card coordinate but activated Change; avoid coordinate clicking"
+  },
+  "regions_xyxy_approx": {
+    "dialog": [220, 26, 810, 150],
+    "balance_bet": [1030, 36, 1240, 128],
+    "main_menu": [565, 282, 718, 437],
+    "cards": [264, 340, 1018, 646],
+    "hold_labels": [265, 275, 1018, 320],
+    "actions": [1015, 505, 1280, 600],
+    "settlement": [410, 377, 936, 478]
+  },
+  "card_rank_left_x_approx": [288, 426, 563, 701, 838],
+  "card_rank_y_approx": [356, 394],
+  "rounds": [
+    {"initial": ["JC", "6H", "JH", "8H", "10S"], "held_indices_1based": [], "final": ["6S", "8C", "3H", "5S", "7S"], "bet": 1, "return": 0},
+    {"initial": ["2S", "5H", "3D", "3H", "6H"], "held_indices_1based": [3, 4], "final": ["JD", "10C", "3D", "3H", "QS"], "bet": 1, "return": 2}
+  ],
+  "evidence": {
+    "rules": ["016_rules_1", "017_rules_2", "018_rules_3"],
+    "payout": "021_payout",
+    "hold": ["031_hold4", "033_hold3", "034_right"],
+    "loss": "010_loss",
+    "win": "038_win",
+    "final_menu": "042_final_menu"
+  },
+  "unverified": [
+    "A2345 straight handling",
+    "Whether discarded cards can reappear during draw",
+    "All Hold and hold toggle-off behavior",
+    "Bet increment/decrement controls",
+    "Complete rank templates: A, 4, 9, K missing from full-size gameplay samples",
+    "Other resolutions and normal-speed timing"
+  ]
+}
