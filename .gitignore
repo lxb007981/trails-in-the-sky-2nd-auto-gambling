@@ -132,3 +132,23 @@ logs/
 !/captures/bj_regression_*.png
 !/captures/bj_dealer_stand17.png
 !/captures/bj_double_777.png
+
+# Roulette rules, asset sources and numeric regression fixtures.
+!/captures/rt_001_menu.png
+!/captures/rt_003_rules.png
+!/captures/rt_006_betrules.png
+!/captures/rt_007_betrules.png
+!/captures/rt_008_betrules.png
+!/captures/rt_009_betrules.png
+!/captures/rt_017_start.png
+!/captures/rt_018_board.png
+!/captures/rt_019_red.png
+!/captures/rt_020_down.png
+!/captures/rt_022_result.png
+!/captures/rt_024_again.png
+!/captures/rt_026_cancel.png
+!/captures/rt_027_menu.png
+!/captures/rt_cal_*.png
+!/captures/rt_win.png
+!/captures/rt_zero_regression.png
+!/captures/rt_selection_regression.png

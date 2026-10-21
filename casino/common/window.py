@@ -75,7 +75,7 @@ class GameWindow:
 
     def press(self, key):
         self.check()
-        vk = {'enter':13,'escape':27,'w':87,'s':83,'a':65,'d':68}[key]
+        vk = {'enter':13,'escape':27,'tab':9,'w':87,'s':83,'a':65,'d':68}[key]
         scan = u.MapVirtualKeyW(vk,0)
         u.keybd_event(vk,scan,0,0)
         try:

@@ -1,0 +1,82 @@
+[
+  {
+    "name": "menu",
+    "box": [
+      570,
+      370,
+      710,
+      428
+    ],
+    "file": "menu.png"
+  },
+  {
+    "name": "prompt",
+    "box": [
+      250,
+      64,
+      463,
+      86
+    ],
+    "file": "prompt.png"
+  },
+  {
+    "name": "again",
+    "box": [
+      250,
+      64,
+      550,
+      119
+    ],
+    "file": "again.png"
+  },
+  {
+    "name": "cancel",
+    "box": [
+      250,
+      64,
+      444,
+      86
+    ],
+    "file": "cancel.png"
+  },
+  {
+    "name": "board",
+    "box": [
+      539,
+      40,
+      740,
+      124
+    ],
+    "file": "board.png"
+  },
+  {
+    "name": "selection",
+    "box": [
+      175,
+      280,
+      248,
+      430
+    ],
+    "file": "selection.png"
+  },
+  {
+    "name": "settlement",
+    "box": [
+      434,
+      391,
+      910,
+      415
+    ],
+    "file": "settlement.png"
+  },
+  {
+    "name": "win",
+    "box": [
+      333,
+      326,
+      944,
+      351
+    ],
+    "file": "win.png"
+  }
+]

@@ -1,10 +1,10 @@
-空之轨迹 2nd 梭哈 / 21 点自动化（Python / Windows）
+空之轨迹 2nd 梭哈 / 21 点 / 轮盘自动化（Python / Windows）
 
 项目目录（2026-10-22 整理）
 
 业务实现按“公共能力 / 玩法 / 开发工具 / 测试”归类。统一从项目根目录通过
 `python -m 包模块` 启动；已移除根目录 Python 兼容脚本和 PowerShell 启动器。
-角子机和轮盘目前仅预留包目录，尚未实现识别、规则或自动操作。
+角子机目前仅预留包目录；轮盘已实现独立的画面识别与自动操作。
 
 ```text
 casino/
@@ -25,7 +25,9 @@ casino/
       rules.py               # 点数、奖励牌型、结算规则
       strategy.py            # Hit / Stand / Double Down 决策
     slots/__init__.py        # 角子机，待实现
-    roulette/__init__.py     # 轮盘，待实现
+    roulette/
+      bot.py                # 轮盘状态机、固定下注、计时和逐局核账
+      vision.py             # 轮盘状态及斜体筹码数字识别
 tools/
   capture_game.py            # 开发用截图及单步操作
   build_poker_assets.py      # 梭哈及公共字形资源构建
@@ -54,7 +56,7 @@ docs/plans/                 # 历史实现计划
 
 依赖方向为：玩法和工具调用公共模块，公共模块不依赖具体玩法。
 21 点直接加载公共字形，不再实例化梭哈 Vision，也不再要求梭哈 `assets/states/`。
-各玩法独立维护状态机、画面坐标和结算规则。角子机与轮盘后续分别在对应包内添加
+各玩法独立维护状态机、画面坐标和结算规则。角子机后续在对应包内添加
 `bot.py`、`vision.py`、`rules.py`，需要决策计算时再添加 `strategy.py`；
 其资源放入 `assets/slots/`、`assets/roulette/`，测试放入对应 `tests/` 子包。
 新玩法沿用公共窗口控制与同一进程互斥锁；不要从梭哈或 21 点模块导入通用能力。
@@ -63,6 +65,36 @@ docs/plans/                 # 历史实现计划
 `python -m casino.games.blackjack.bot`、`python -m tools.evaluate_blackjack`。
 测试命令仍为 `.\.venv\Scripts\python.exe -m unittest -v`。
 本次目录调整前后 57 项离线测试均通过；本次未做游戏实机操作。
+
+轮盘入口（2026-10-22）
+
+在轮盘菜单选中“开始”，或停留在未下注、初始选区为 1/2/3 的下注界面：
+
+  .\.venv\Scripts\python.exe -m casino.games.roulette.bot --run --focus --minutes 20
+
+仅识别当前画面，不发送按键：
+
+  .\.venv\Scripts\python.exe -m casino.games.roulette.bot --focus
+
+默认运行 20 分钟，每局固定 10 枚下注 1/2/3（STREET），命中返还 120 枚。
+计时包括进入下注界面的时间；到时完成当前局并返回菜单，不再开新局。
+游戏必须保持前台、客户区 1280×720。F8、失焦、识别超时或账目不符时停止。
+与梭哈、21 点共用互斥锁。无需鼠标定位，不读取或修改游戏内存或存档。
+每局核对扣款 10、结算返还 0/120，以及下局余额；不通过追损加倍改变投入。
+游戏包含 0 和 00，固定下注不保证净增长。若 38 个结果等概率，每局期望净变化
+为 120×3/38−10≈−0.526 枚；该概率假设不是对游戏随机机制的实测结论。
+
+运行资源位于 assets/roulette/，运行不依赖 captures/；可通过
+`.\.venv\Scripts\python.exe -m tools.build_roulette_assets` 从采集图重建。
+日志保存在 logs/roulette_日期时间/，包含逐局结算截图、events.jsonl 和最终菜单截图。
+中断后先人工完成当前局或退回空下注界面，再启动；程序不会猜测半局账目。
+连续验收结果见 roulette_validation_report.json。
+
+实机验收通过：连续运行 1209.907 秒（20 分 9.9 秒），完成 50 局，8 胜、42 负，
+余额 66971 → 67431，净增 460 枚；无中断，退出码 0，到时结算后自动返回菜单。
+全部 50 张结算截图离线复读通过，逐局账目与最终菜单余额一致；68 项离线测试通过。
+证据归档于 validation/roulette_20261022_015914/，完整日志和逐局截图位于
+logs/roulette_20261022_015914/。修复前的中断试验不计入这次连续验收。
 
 21 点入口（2026-10-22）
 57 项测试通过（含 30 项 21 点测试及原梭哈回归）。最新实机每局 100 枚运行 10 分钟，
