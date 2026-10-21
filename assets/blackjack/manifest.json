@@ -1,0 +1,122 @@
+[
+  {
+    "name": "menu",
+    "file": "menu.png",
+    "box": [
+      574,
+      335,
+      709,
+      428
+    ]
+  },
+  {
+    "name": "bet",
+    "file": "bet.png",
+    "box": [
+      480,
+      245,
+      615,
+      470
+    ]
+  },
+  {
+    "name": "bet_prompt",
+    "file": "bet_prompt.png",
+    "box": [
+      250,
+      62,
+      565,
+      122
+    ]
+  },
+  {
+    "name": "again",
+    "file": "again.png",
+    "box": [
+      250,
+      62,
+      405,
+      88
+    ]
+  },
+  {
+    "name": "cancel",
+    "file": "cancel.png",
+    "box": [
+      250,
+      62,
+      426,
+      88
+    ]
+  },
+  {
+    "name": "deposit",
+    "file": "deposit.png",
+    "box": [
+      250,
+      62,
+      495,
+      88
+    ]
+  },
+  {
+    "name": "open",
+    "file": "open.png",
+    "box": [
+      250,
+      62,
+      405,
+      88
+    ]
+  },
+  {
+    "name": "stand_dialog",
+    "file": "stand_dialog.png",
+    "box": [
+      250,
+      62,
+      505,
+      122
+    ]
+  },
+  {
+    "name": "action_hit",
+    "file": "action_hit.png",
+    "box": [
+      980,
+      187,
+      1275,
+      221
+    ]
+  },
+  {
+    "name": "action_stand",
+    "file": "action_stand.png",
+    "box": [
+      980,
+      239,
+      1275,
+      273
+    ]
+  },
+  {
+    "name": "settlement",
+    "file": "settlement.png",
+    "box": [
+      435,
+      435,
+      906,
+      459
+    ]
+  },
+  {
+    "name": "dialog_panel",
+    "file": "dialog_panel.png",
+    "box": [
+      240,
+      48,
+      390,
+      60
+    ]
+  }
+]

@@ -1,1 +1,2 @@
 captures/*.png filter=lfs diff=lfs merge=lfs -text
+validation/**/*.png filter=lfs diff=lfs merge=lfs -text
