@@ -54,6 +54,7 @@ class CasinoApp:
         self.duration = 0
         self.stopping = False
         root.title('空之轨迹 2nd · 全自动赌圣')
+        root.iconbitmap(default=str(ROOT / 'assets' / 'sora_2.ico'))
         root.geometry('820x600')
         root.minsize(820, 560)
         style = ttk.Style(root)
