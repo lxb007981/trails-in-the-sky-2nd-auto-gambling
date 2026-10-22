@@ -157,3 +157,8 @@ logs/
 !/captures/rt_win.png
 !/captures/rt_zero_regression.png
 !/captures/rt_selection_regression.png
+
+# Generated local validation reports, event logs, and screenshots.
+/validation/
+/validation_report.json
+/*_validation_report.json
