@@ -70,7 +70,11 @@ class RouletteVision:
             for i in range(7, -1, -1):
                 mask = counter_mask(im, (int(1213-(i+1)*11.5), y, int(1213-i*11.5), y+24))
                 if mask.sum() > 4:
-                    text += match(mask, self.account_digits, .16, .025)[0]
+                    try:
+                        text += match(mask, self.account_digits, .16, .025)[0]
+                    except RecognitionError as error:
+                        field = 'balance' if y == 55 else 'bet'
+                        raise RecognitionError(f'{field} digit {i} from right: {error}') from error
                 elif text:
                     raise RecognitionError('Gap in account digits')
             if not text:

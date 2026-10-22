@@ -5,6 +5,8 @@ logs/
 
 # Keep only reference/training/test captures; ignore temporary screenshots.
 /captures/*
+!/captures/rt_account_96972.png
+!/captures/rt_account_25011.png
 !/captures/poker_fast_mode_initial.png
 !/captures/poker_fast_mode_on.png
 !/captures/poker_fast_five_digits.png

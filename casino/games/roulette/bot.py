@@ -31,13 +31,18 @@ class RouletteBot:
     def wait(self, states, read=None, timeout=60):
         end = time.monotonic()+timeout
         previous, count, detail = None, 0, None
-        while time.monotonic() < end:
+        last_report = float('-inf')
+        state = None
+        while (now := time.monotonic()) < end:
             self.last = self.game.grab()
             state = self.vision.state(self.last)
             try:
                 value = (state, read(self.last) if read else None) if state in states else None
             except RecognitionError as error:
                 detail, value = str(error), None
+                if now-last_report >= 5:
+                    self.event('recognition_wait', state=state, reason=detail)
+                    last_report = now
             count = count+1 if value is not None and value == previous else 1
             previous = value
             if value is not None and count >= 4:

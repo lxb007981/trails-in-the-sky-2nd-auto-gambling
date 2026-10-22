@@ -45,6 +45,14 @@ def build():
         with Image.open(ROOT/'captures'/f'{name}.png') as im:
             mask = counter_mask(im,(1201,89,1213,113))
             np.save(digits/f'0_{name}.npy', normalize(mask))
+    # The original calibration mostly exercises digits in the tens column.
+    # Half-pixel advances rasterize the same digit differently in other cells.
+    # Keep real samples from balances that previously stalled menu recovery.
+    for name, value in [('rt_account_96972', '96972'), ('rt_account_25011', '25011')]:
+        with Image.open(ROOT/'captures'/f'{name}.png') as im:
+            for i, d in enumerate(reversed(value)):
+                box = (int(1213-(i+1)*11.5),55,int(1213-i*11.5),79)
+                np.save(digits/f'{d}_{name}_{i}.npy', normalize(counter_mask(im,box)))
     digits = folder/'digits'
     digits.mkdir(exist_ok=True)
     samples = [

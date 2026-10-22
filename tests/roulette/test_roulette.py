@@ -31,6 +31,12 @@ class VisionTests(unittest.TestCase):
         with Image.open(ROOT/'captures/rt_022_result.png') as im:
             self.assertEqual(self.vision.settlement(im),(10,0,0))
 
+    def test_menu_balances_after_blackjack(self):
+        for balance in (96972, 25011):
+            with self.subTest(balance=balance), Image.open(ROOT/'captures'/f'rt_account_{balance}.png') as im:
+                self.assertEqual(self.vision.state(im), 'menu')
+                self.assertEqual(self.vision.account(im), (balance, 0))
+
     def test_win_settlement_uses_different_table(self):
         with Image.open(ROOT/'captures/rt_win.png') as im:
             self.assertEqual(self.vision.state(im),'settlement')
@@ -74,6 +80,29 @@ class RunTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 bot.run(duration)
             bot.game.press.assert_not_called()
+
+    def test_recognition_failure_is_reported_and_times_out_without_input(self):
+        bot = self.bot()
+        bot.vision.state.return_value = 'menu'
+        bot.vision.account.side_effect = RecognitionError('balance digit uncertain')
+        with patch('casino.games.roulette.bot.time.monotonic', side_effect=[0, 0, 1, 5, 61]), \
+                patch('casino.games.roulette.bot.time.sleep'):
+            with self.assertRaisesRegex(RecognitionError, 'balance digit uncertain'):
+                bot.wait({'menu'}, bot.vision.account)
+        self.assertEqual(bot.event.call_count, 2)
+        bot.event.assert_called_with('recognition_wait', state='menu', reason='balance digit uncertain')
+        bot.game.press.assert_not_called()
+
+    def test_recognition_recovers_only_after_four_stable_reads(self):
+        bot = self.bot()
+        bot.vision.state.return_value = 'menu'
+        bot.vision.account.side_effect = [RecognitionError('uncertain'), (25011, 0),
+                                        (25011, 0), (25011, 0), (25011, 0)]
+        with patch('casino.games.roulette.bot.time.sleep'):
+            _, state, account = bot.wait({'menu'}, bot.vision.account)
+        self.assertEqual((state, account), ('menu', (25011, 0)))
+        self.assertEqual(bot.game.grab.call_count, 5)
+        bot.game.press.assert_not_called()
 
     def test_deadline_before_bet(self):
         bot = self.bot()
