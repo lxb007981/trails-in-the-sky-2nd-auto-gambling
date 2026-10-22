@@ -211,7 +211,7 @@ class BlackjackBot:
         im,_,_ = self.wait({'menu'})
         im.save(self.logdir/'final_menu.png')
 
-    def run(self, minutes=15, bet=1):
+    def run(self, minutes=15, bet=100):
         if not math.isfinite(minutes) or minutes <= 0 or not 1 <= bet <= 100:
             raise ValueError('Require finite positive minutes and bet 1..100')
         start = time.monotonic()
@@ -253,7 +253,7 @@ def main():
     parser.add_argument('--run',action='store_true')
     parser.add_argument('--focus',action='store_true')
     parser.add_argument('--minutes',type=float,default=15)
-    parser.add_argument('--bet',type=int,choices=range(1,101),default=1)
+    parser.add_argument('--bet',type=int,choices=range(1,101),default=100)
     parser.add_argument('--dealer-stand',type=int,choices=(17,18),default=17)
     parser.add_argument('--ordinary-special-ties',action='store_true',help='Treat equal totals as draws, even with a bonus hand')
     args = parser.parse_args()

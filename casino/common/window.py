@@ -2,6 +2,8 @@
 import ctypes as c
 from ctypes import wintypes as w
 import time
+import os
+from pathlib import Path
 from PIL import ImageGrab
 
 u = c.windll.user32
@@ -57,6 +59,9 @@ class GameWindow:
         self.check()
 
     def check(self):
+        stop_file = os.environ.get('CASINO_STOP_FILE')
+        if stop_file and Path(stop_file).exists():
+            raise Stopped('Stopped from GUI')
         if u.GetAsyncKeyState(0x77) & 0x8001:
             raise Stopped('F8 emergency stop')
         if u.IsIconic(self.hwnd) or u.GetForegroundWindow() != self.hwnd:
