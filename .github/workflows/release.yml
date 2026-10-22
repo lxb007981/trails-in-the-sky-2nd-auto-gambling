@@ -1,0 +1,42 @@
+name: Publish Release
+
+on:
+  push:
+    tags: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-windows.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Sora2AutoGambling-windows-x64
+          path: dist
+      - name: Create release and upload EXE
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        # GitHub automatically includes source ZIP and tar.gz links for the tag.
+        # Allow a failed upload to be retried by rerunning this workflow.
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/Sora2AutoGambling.exe --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/Sora2AutoGambling.exe \
+              --verify-tag --title "$RELEASE_TAG" --generate-notes
+          fi
