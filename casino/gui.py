@@ -11,6 +11,7 @@ import threading
 import time
 import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
+from PIL import Image, ImageTk
 
 from casino.common.paths import ROOT
 
@@ -53,8 +54,8 @@ class CasinoApp:
         self.duration = 0
         self.stopping = False
         root.title('空之轨迹 2nd · 全自动赌圣')
-        root.geometry('760x560')
-        root.minsize(650, 500)
+        root.geometry('820x600')
+        root.minsize(820, 560)
         style = ttk.Style(root)
         if 'vista' in style.theme_names():
             style.theme_use('vista')
@@ -62,9 +63,19 @@ class CasinoApp:
         style.configure('TButton', font=('Microsoft YaHei UI', 10), padding=7)
         body = ttk.Frame(root, padding=22)
         body.pack(fill='both', expand=True)
-        ttk.Label(body, text='自动刷筹码', font=('Microsoft YaHei UI', 20, 'bold')).pack(anchor='w')
-        ttk.Label(body, text='选择游戏与时长，然后开始。').pack(anchor='w', pady=(4, 18))
-        controls = ttk.Frame(body)
+        top = ttk.Frame(body)
+        top.pack(fill='x')
+        reference = ttk.Frame(top)
+        reference.pack(side='right', anchor='n', padx=(12, 0))
+        ttk.Label(reference, text='起始界面示例 · 点击图片放大').pack(anchor='w')
+        self.reference_label = ttk.Label(reference, cursor='hand2')
+        self.reference_label.pack(pady=(4, 0))
+        self.reference_label.bind('<Button-1>', self.show_reference)
+        settings = ttk.Frame(top)
+        settings.pack(side='left', fill='both', expand=True)
+        ttk.Label(settings, text='自动刷筹码', font=('Microsoft YaHei UI', 20, 'bold')).pack(anchor='w')
+        ttk.Label(settings, text='选择游戏与时长，然后开始。').pack(anchor='w', pady=(4, 18))
+        controls = ttk.Frame(settings)
         controls.pack(fill='x')
         ttk.Label(controls, text='本次游戏').grid(row=0, column=0, sticky='w')
         ttk.Label(controls, text='持续时间（分钟）').grid(row=0, column=1, padx=20, sticky='w')
@@ -96,6 +107,34 @@ class CasinoApp:
 
     def update_hint(self, _event=None):
         self.hint.set(GAMES[self.game.get()][1])
+        path = ROOT / 'assets' / 'start_screens' / f'{GAMES[self.game.get()][0]}.png'
+        try:
+            with Image.open(path) as source:
+                self.reference_image = source.copy()
+            preview = self.reference_image.copy()
+            preview.thumbnail((288, 162), Image.Resampling.LANCZOS)
+            self.reference_photo = ImageTk.PhotoImage(preview, master=self.root)
+            self.reference_label.configure(image=self.reference_photo, text='')
+        except OSError:
+            self.reference_image = None
+            self.reference_label.configure(image='', text='起始界面示例暂不可用')
+
+    def show_reference(self, _event=None):
+        if self.reference_image is None:
+            return
+        popup = tk.Toplevel(self.root)
+        popup.title(f'{self.game.get()} · 起始界面示例')
+        popup.transient(self.root)
+        picture = self.reference_image.copy()
+        picture.thumbnail((min(1280, self.root.winfo_screenwidth() - 100),
+                           min(720, self.root.winfo_screenheight() - 160)),
+                          Image.Resampling.LANCZOS)
+        photo = ImageTk.PhotoImage(picture, master=popup)
+        label = ttk.Label(popup, image=photo)
+        label.image = photo
+        label.pack(padx=12, pady=12)
+        ttk.Label(popup, text='请将游戏调整到图示界面，再点击程序中的“开始游玩”。').pack(pady=(0, 12))
+        popup.bind('<Escape>', lambda _event: popup.destroy())
 
     def append(self, text):
         self.output.configure(state='normal')
