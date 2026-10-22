@@ -1,10 +1,10 @@
-空之轨迹 2nd 梭哈 / 21 点 / 轮盘自动化（Python / Windows）
+空之轨迹 2nd 梭哈 / 21 点 / 轮盘 / 角子机自动化（Python / Windows）
 
 项目目录（2026-10-22 整理）
 
 业务实现按“公共能力 / 玩法 / 开发工具 / 测试”归类。统一从项目根目录通过
 `python -m 包模块` 启动；已移除根目录 Python 兼容脚本和 PowerShell 启动器。
-角子机目前仅预留包目录；轮盘已实现独立的画面识别与自动操作。
+角子机启动截图确认快速模式后采用键盘定时操作；轮盘已实现独立的画面识别与自动操作。
 
 ```text
 casino/
@@ -24,7 +24,8 @@ casino/
       cards.py               # 旋转牌角识别
       rules.py               # 点数、奖励牌型、结算规则
       strategy.py            # Hit / Stand / Double Down 决策
-    slots/__init__.py        # 角子机，待实现
+    slots/bot.py             # 角子机，快速模式、交替按键和定时停止
+    slots/vision.py          # 启动时识别 HIGH-SPEED MODE 标识
     roulette/
       bot.py                # 轮盘状态机、固定下注、计时和逐局核账
       vision.py             # 轮盘状态及斜体筹码数字识别
@@ -56,8 +57,8 @@ docs/plans/                 # 历史实现计划
 
 依赖方向为：玩法和工具调用公共模块，公共模块不依赖具体玩法。
 21 点直接加载公共字形，不再实例化梭哈 Vision，也不再要求梭哈 `assets/states/`。
-各玩法独立维护状态机、画面坐标和结算规则。角子机后续在对应包内添加
-`bot.py`、`vision.py`、`rules.py`，需要决策计算时再添加 `strategy.py`；
+各玩法独立维护状态机、画面坐标和结算规则。角子机仅在启动时识别快速模式，
+后续如需决策，在对应包内添加 `rules.py`、`strategy.py`；
 其资源放入 `assets/slots/`、`assets/roulette/`，测试放入对应 `tests/` 子包。
 新玩法沿用公共窗口控制与同一进程互斥锁；不要从梭哈或 21 点模块导入通用能力。
 
@@ -65,6 +66,27 @@ docs/plans/                 # 历史实现计划
 `python -m casino.games.blackjack.bot`、`python -m tools.evaluate_blackjack`。
 测试命令仍为 `.\.venv\Scripts\python.exe -m unittest -v`。
 本次目录调整前后 57 项离线测试均通过；本次未做游戏实机操作。
+
+角子机入口（2026-10-22）
+
+游戏已处于角子机界面，客户区为 1280×720 时：
+
+```powershell
+.\.venv\Scripts\python.exe -m casino.games.slots.bot --run --focus --minutes 10
+```
+
+启动时截图一次，保存为日志目录的 `startup.png`，识别右上角 `HIGH-SPEED MODE`
+标识。已开启则直接开始；未开启则按一次 Ctrl。识别不确定时停止，不发送按键。
+识别模板位于 `assets/slots/`。无需手动传入模式，已移除 `--fast-mode` 参数。
+随后循环交替按 S、Enter，每次按住 80 毫秒、松开后等待 200 毫秒。
+默认运行 10 分钟，可通过 `--minutes` 指定其他时长；计时含切换快速模式。
+到时停止发键，保留当前游戏界面，全程不按 Esc、不使用鼠标，循环过程中不截图。
+不带 `--run` 仅输出用法，不发送任何按键。
+
+保持游戏前台；F8 或窗口失焦立即停止，与其他玩法共用进程互斥锁。
+日志位于 `logs/slots_日期时间/events.jsonl`，每 30 秒记录累计按键数，
+正常结束记录 `complete`，中断记录 `stopped`。日志验证持续发键与前台检查，
+不统计实际局数、筹码收益或画面是否推进。
 
 轮盘入口（2026-10-22）
 

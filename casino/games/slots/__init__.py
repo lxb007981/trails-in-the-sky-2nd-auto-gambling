@@ -1,1 +1,1 @@
-"""Reserved for future implementation."""
+"""Timed, keyboard-only slot machine automation."""
