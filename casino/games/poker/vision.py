@@ -69,8 +69,12 @@ class Vision:
         if self.score(im, 'menu') < .05:
             return 'menu'
         if self.score(im, 'hand') < .04:
-            # Require cards, not just a stale action label during a transition.
-            if np.mean(crop(im, (290,420,320,500))) > 170:
+            # Check the white top of every card, away from rank/suit glyphs.
+            # Face-card artwork darkens when enlarged by cursor selection;
+            # its brightness cannot distinguish a dealt hand from animation.
+            # HOLD lifts cards, so allow artwork to enter part of each patch.
+            if all(np.mean(np.all(crop(im, (x+70,350,x+100,370)) > 200,
+                                  axis=2)) > .35 for x in XS):
                 return 'hand'
         for name in ('bet_prompt', 'deposit', 'cancel', 'win_dialog', 'loss_dialog'):
             if self.score(im, name) < .035:

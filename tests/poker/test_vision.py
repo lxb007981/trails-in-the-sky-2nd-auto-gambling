@@ -60,6 +60,34 @@ class VisionTests(unittest.TestCase):
         self.assertEqual(self.v.balance(im),403)
         self.assertEqual(self.v.remaining(im),393)
 
+    def test_selected_king_does_not_hide_hand(self):
+        from casino.games.poker.bot import Bot
+        from unittest.mock import Mock
+        with self.im('poker_selected_king') as im:
+            self.assertEqual(self.v.state(im), 'hand')
+            self.assertEqual(self.v.cursor(im), 0)
+            bot = Bot.__new__(Bot)
+            bot.vision, bot.poll_interval = self.v, .12
+            bot.game = Mock()
+            bot.game.grab.return_value = im
+            with patch('casino.games.poker.bot.time.sleep'):
+                _, cursor = bot.wait({'hand'}, predicate=self.v.cursor)
+            self.assertEqual(cursor, 0)
+            self.assertEqual(bot.game.grab.call_count, 3)
+
+    def test_hand_requires_all_cards_despite_stale_change_label(self):
+        from casino.games.poker.vision import XS
+        with self.im('007_hand') as original:
+            for x in XS:
+                im = original.copy()
+                im.paste((30, 80, 40), (x+70,350,x+100,370))
+                self.assertNotEqual(self.v.state(im), 'hand')
+
+    def test_held_and_focused_cards_remain_hand_state(self):
+        for name in ['029_left', '031_hold4', '033_hold3', '034_right']:
+            with self.subTest(name=name), self.im(name) as im:
+                self.assertEqual(self.v.state(im), 'hand')
+
     def test_unreadable_card_rejected(self):
         with self.assertRaises(RecognitionError):
             self.v.hand(self.im('052_hand'))
