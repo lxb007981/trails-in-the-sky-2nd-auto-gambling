@@ -73,14 +73,14 @@ class GameWindow:
         self.check()
         return im
 
-    def press(self, key):
+    def press(self, key, *, hold=.08, rest=.20):
         self.check()
         vk = {'enter':13,'escape':27,'tab':9,'ctrl':17,'w':87,'s':83,'a':65,'d':68}[key]
         scan = u.MapVirtualKeyW(vk,0)
         u.keybd_event(vk,scan,0,0)
         try:
-            time.sleep(.08)
+            time.sleep(hold)
         finally:
             u.keybd_event(vk,scan,2,0)
         self.check()
-        time.sleep(.20)
+        time.sleep(rest)

@@ -6,7 +6,8 @@ import math
 from pathlib import Path
 import time
 from casino.common.window import GameWindow, RunLock, Stopped
-from casino.common.paths import ROOT
+from casino.common.paths import ROOT, ASSETS
+from casino.common.fast_mode import FastModeVision
 from casino.common.vision import RecognitionError, crop
 from casino.games.blackjack.vision import BlackjackVision
 from casino.games.blackjack.strategy import Strategy
@@ -22,6 +23,8 @@ class BlackjackBot:
         self.logdir = Path(logdir or ROOT/'logs'/('blackjack_'+time.strftime('%Y%m%d_%H%M%S')))
         self.logdir.mkdir(parents=True, exist_ok=True)
         self.last = None
+        self.poll_interval = .20
+        self.fast_mode = False
 
     def event(self, event, **data):
         row = dict(time=time.time(),event=event,**data)
@@ -58,11 +61,32 @@ class BlackjackBot:
                     previous, count = None, 0
             else:
                 previous, count = None, 0
-            time.sleep(.20)
+            time.sleep(self.poll_interval)
         raise RecognitionError(f'Timed out: wanted {states}, saw {state}; {detail}')
 
+    def prepare_fast_mode(self):
+        vision = FastModeVision(ASSETS/'blackjack')
+        self.last = self.game.grab()
+        self.last.save(self.logdir/'startup.png')
+        mode = vision.fast_mode(self.last)
+        self.event('mode_detected', initial_fast_mode=mode)
+        if mode == 'off':
+            self.game.press('ctrl')
+        # Require stable confirmation before any betting input.
+        self.wait({'menu','bet_prompt','again','bet'},
+                  lambda im,s: 'on' if vision.fast_mode(im) == 'on' else None,
+                  timeout=5)
+        self.last.save(self.logdir/'fast_mode_confirmed.png')
+        self.fast_mode = True
+        self.poll_interval = .12
+        self.event('fast_mode', action='pressed_ctrl' if mode == 'off' else 'already_on',
+                   confirmed=True, hold_seconds=.06, rest_seconds=.12, poll_seconds=.12)
+
     def press(self, key):
-        self.game.press(key)
+        if self.fast_mode:
+            self.game.press(key, hold=.06, rest=.12)
+        else:
+            self.game.press(key)
 
     def to_bet(self):
         for _ in range(5):
@@ -192,6 +216,7 @@ class BlackjackBot:
             raise ValueError('Require finite positive minutes and bet 1..100')
         start = time.monotonic()
         deadline = start+minutes*60
+        self.prepare_fast_mode()
         initial,_ = self.to_bet()
         balance, completed = initial, 0
         self.event('start',balance=initial,bet=bet,minutes=minutes,dealer_stand=self.strategy.dealer_stand,

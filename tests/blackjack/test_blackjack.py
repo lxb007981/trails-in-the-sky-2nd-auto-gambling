@@ -187,6 +187,9 @@ class ControlTests(unittest.TestCase):
     def bot(self):
         b = BlackjackBot.__new__(BlackjackBot)
         b.strategy = Strategy()
+        b.prepare_fast_mode = Mock()
+        b.poll_interval = .20
+        b.fast_mode = False
         b.to_bet = Mock(return_value=(1000,1))
         b.set_bet = Mock(return_value=1000)
         b.press = Mock()
@@ -194,6 +197,43 @@ class ControlTests(unittest.TestCase):
         b.event = Mock()
         b.play_hand = Mock(return_value=dict(bet=1,received=0))
         return b
+
+    def test_fast_mode_startup(self):
+        from casino.common.fast_mode import MODE_BOX
+        from casino.common.paths import ASSETS
+        def frame(mode):
+            im = Image.new('RGB',(1280,720))
+            with Image.open(ASSETS/'blackjack'/f'fast_mode_{mode}.png') as badge:
+                im.paste(badge, MODE_BOX[:2])
+            return im
+        for mode in ('off','on','unknown','failed_toggle'):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                b = self.bot()
+                b.logdir = Path(directory)
+                b.game = Mock()
+                b.vision = Mock()
+                b.vision.state.return_value = 'menu'
+                initial = frame('off' if mode == 'failed_toggle' else mode) if mode != 'unknown' else Image.new('RGB',(1280,720),'magenta')
+                b.game.grab.side_effect = [initial]+[frame('off' if mode == 'failed_toggle' else 'on')]*3
+                if mode == 'failed_toggle':
+                    with patch('casino.games.blackjack.bot.time.monotonic',side_effect=[0,0,6]), patch('casino.games.blackjack.bot.time.sleep'):
+                        with self.assertRaises(RecognitionError):
+                            BlackjackBot.prepare_fast_mode(b)
+                    self.assertFalse(b.fast_mode)
+                elif mode == 'unknown':
+                    with self.assertRaises(RecognitionError):
+                        BlackjackBot.prepare_fast_mode(b)
+                    b.game.press.assert_not_called()
+                else:
+                    with patch('casino.games.blackjack.bot.time.sleep'):
+                        BlackjackBot.prepare_fast_mode(b)
+                    self.assertTrue(b.fast_mode)
+                    if mode == 'off':
+                        b.game.press.assert_called_once_with('ctrl')
+                    else:
+                        b.game.press.assert_not_called()
+                    BlackjackBot.press(b,'enter')
+                    b.game.press.assert_called_with('enter',hold=.06,rest=.12)
 
     def test_duration_rechecked_after_bet_adjustment(self):
         b = self.bot()
