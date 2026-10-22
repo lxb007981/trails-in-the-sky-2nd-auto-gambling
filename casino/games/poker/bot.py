@@ -5,6 +5,8 @@ import math
 from pathlib import Path
 import time
 from casino.common.window import GameWindow, Stopped, RunLock
+from casino.common.fast_mode import FastModeVision
+from casino.common.paths import ASSETS
 from casino.games.poker.vision import Vision, RecognitionError, ROOT
 from casino.games.poker.strategy import Strategy, parse_card, categories, PAYOUTS
 
@@ -20,6 +22,8 @@ class Bot:
         self.logdir = Path(logdir or ROOT/'logs'/time.strftime('%Y%m%d_%H%M%S'))
         self.logdir.mkdir(parents=True, exist_ok=True)
         self.last = None
+        self.poll_interval = .25
+        self.fast_mode = False
 
     def event(self, kind, **data):
         row = dict(time=time.time(),event=kind,**data)
@@ -39,7 +43,7 @@ class Bot:
             if state in {'bet_prompt','deposit','cancel','result','win_dialog','loss_dialog','settlement'}:
                 if not self.vision.dialogue_ready(im):
                     previous,count = None,0
-                    time.sleep(.25)
+                    time.sleep(self.poll_interval)
                     continue
             if state in states:
                 try:
@@ -58,11 +62,31 @@ class Bot:
                     previous,count = None,0
             else:
                 previous,count = None,0
-            time.sleep(.25)
+            time.sleep(self.poll_interval)
         raise RecognitionError(f'Timed out waiting for {states}; last state={state}; detail={last_error}')
 
+    def prepare_fast_mode(self):
+        vision = FastModeVision(ASSETS/'poker')
+        self.last = self.game.grab()
+        self.last.save(self.logdir/'startup.png')
+        mode = vision.fast_mode(self.last)
+        self.event('mode_detected', initial_fast_mode=mode)
+        if mode == 'off':
+            self.game.press('ctrl')
+        # Confirm three stable frames before sending any betting input.
+        self.wait({'menu','bet_prompt','bet'}, timeout=5,
+                  predicate=lambda im: 'on' if vision.fast_mode(im) == 'on' else None)
+        self.last.save(self.logdir/'fast_mode_confirmed.png')
+        self.fast_mode = True
+        self.poll_interval = .12
+        self.event('fast_mode', action='pressed_ctrl' if mode == 'off' else 'already_on',
+                   confirmed=True, hold_seconds=.06, rest_seconds=.12, poll_seconds=.12)
+
     def press(self,key):
-        self.game.press(key)
+        if self.fast_mode:
+            self.game.press(key, hold=.06, rest=.12)
+        else:
+            self.game.press(key)
 
     def to_bet(self):
         im,state = self.wait({'menu','bet_prompt','bet'})
@@ -146,6 +170,7 @@ class Bot:
             raise ValueError('Bet must be an integer from 1 to 10')
         started = time.monotonic()
         deadline = started + minutes*60
+        self.prepare_fast_mode()
         self.to_bet()
         initial_balance = self.set_bet(bet)
         self.event('start',initial_balance=initial_balance,bet=bet,minutes=minutes,

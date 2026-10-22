@@ -71,6 +71,11 @@ class VisionTests(unittest.TestCase):
                 self.assertEqual(self.v.balance(im),balance)
                 self.assertEqual(self.v.remaining(im),remaining)
 
+    def test_touching_five_digit_balance(self):
+        with self.im('poker_fast_five_digits') as im:
+            self.assertEqual(self.v.balance(im),86421)
+            self.assertEqual(self.v.remaining(im),86420)
+
     def test_untrained_result_frame(self):
         # This frame is deliberately absent from labels.json/template training.
         self.assertEqual(self.v.hand(self.im('063_result'))[0],['TS','7D','5D','TD','5C'])
@@ -92,6 +97,7 @@ class VisionTests(unittest.TestCase):
         from casino.games.poker.bot import Bot
         from unittest.mock import MagicMock, patch
         bot = Bot.__new__(Bot)
+        bot.poll_interval = .25
         bot.vision = self.v
         bot.game = MagicMock()
         bot.game.grab.side_effect = [self.im('064_live')]*3+[self.im('063_result')]*3

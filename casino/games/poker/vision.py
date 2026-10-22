@@ -1,6 +1,7 @@
 """Conservative screenshot recognition using locally collected glyphs."""
 from pathlib import Path
 import json
+from functools import lru_cache
 import cv2
 import numpy as np
 from PIL import Image
@@ -98,7 +99,32 @@ class Vision:
         chunks = segments(ink(crop(im, box)))
         if not chunks:
             raise RecognitionError('No digits')
-        return int(''.join(match(c, self.templates['digits'], .20, .035)[0] for c in chunks))
+        @lru_cache(None)
+        def decode(shape, data):
+            chunk = np.frombuffer(data, dtype=np.uint8).reshape(shape)
+            try:
+                return match(chunk, self.templates['digits'], .20, .035)
+            except RecognitionError as original:
+                # Serif digits may overlap in the column projection. Only
+                # split rejected wide chunks; keep the original confidence gates.
+                if chunk.shape[1] < 15:
+                    raise original
+                options = {}
+                for x in range(5, chunk.shape[1]-4):
+                    left, right = chunk[:,:x], chunk[:,x:]
+                    try:
+                        a, sa = decode(left.shape, left.tobytes())
+                        b, sb = decode(right.shape, right.tobytes())
+                    except RecognitionError:
+                        continue
+                    text = a+b
+                    score = (sa*len(a)+sb*len(b))/len(text)
+                    options[text] = min(options.get(text, 1), score)
+                ranked = sorted((score, text) for text, score in options.items())
+                if not ranked or (len(ranked)>1 and ranked[1][0]-ranked[0][0]<.035):
+                    raise original
+                return ranked[0][1], ranked[0][0]
+        return int(''.join(decode(c.shape, c.tobytes())[0] for c in chunks))
 
     def dialogue_ready(self, im):
         # The gold continuation triangle appears only after text finishes typing.

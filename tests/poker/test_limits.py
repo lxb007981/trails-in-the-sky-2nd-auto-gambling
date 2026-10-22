@@ -7,6 +7,7 @@ class LimitTests(unittest.TestCase):
     def make_bot(self, balances, payouts):
         bot = Bot.__new__(Bot)
         bot.wheel = True
+        bot.prepare_fast_mode = MagicMock()
         bot.to_bet = MagicMock(side_effect=[(None,(b,b-1)) for b in balances])
         bot.set_bet = MagicMock(side_effect=[balances[0]]+balances[:-1])
         bot.play_hand = MagicMock(side_effect=[{'payout':p} for p in payouts])

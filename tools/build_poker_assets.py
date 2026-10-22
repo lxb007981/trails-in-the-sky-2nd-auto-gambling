@@ -3,6 +3,7 @@ import json
 from PIL import Image
 import numpy as np
 from casino.games.poker.vision import ROOT, ASSETS, rank_mask, suit_mask, normalize, ink, crop, segments
+from casino.common.fast_mode import MODE_BOX
 
 STATE_REFERENCES = [
     ('menu', '042_final_menu', (565,282,718,437)),
@@ -37,6 +38,11 @@ def save(kind, label, suffix, mask):
 
 def build():
     build_state_assets()
+    folder = ASSETS/'poker'
+    folder.mkdir(parents=True, exist_ok=True)
+    for mode, source in [('off', 'initial'), ('on', 'on')]:
+        with Image.open(ROOT/'captures'/f'poker_fast_mode_{source}.png') as image:
+            image.convert('RGB').crop(MODE_BOX).save(folder/f'fast_mode_{mode}.png')
     labels = json.loads((ROOT/'labels.json').read_text())
     # These are generated arrays only. Remove stale labels when correcting data.
     for kind in ('ranks','suits','digits'):
