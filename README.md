@@ -90,6 +90,16 @@ docs/plans/                 # 历史实现计划
 
 轮盘入口（2026-10-22）
 
+启动时复用 21 点的 HIGH-SPEED MODE 识别算法，使用轮盘专用背景模板。
+关闭时按一次 Ctrl，连续四帧确认开启后才继续；已开启时不重复切换，无法确认时停止。
+快速模式每次按住 60 毫秒、松开后等待 120 毫秒，画面轮询间隔 120 毫秒。
+保留连续四帧状态确认、下注扣款与结算余额核对；只读分析不切换模式，结束后保留快速模式。
+模板位于 assets/roulette/fast_mode_*.png，可随 tools.build_roulette_assets 重建。
+
+```powershell
+.\.venv\Scripts\python.exe -m casino.games.roulette.bot --run --focus --minutes 10
+```
+
 在轮盘菜单选中“开始”，或停留在未下注、初始选区为 1/2/3 的下注界面：
 
   .\.venv\Scripts\python.exe -m casino.games.roulette.bot --run --focus --minutes 20

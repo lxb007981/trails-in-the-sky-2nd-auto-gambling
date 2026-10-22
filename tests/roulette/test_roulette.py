@@ -63,6 +63,9 @@ class RunTests(unittest.TestCase):
         bot.vision = Mock()
         bot.event = Mock()
         bot.finish = Mock()
+        bot.prepare_fast_mode = Mock()
+        bot.fast_mode = False
+        bot.poll_interval = .25
         return bot
 
     def test_invalid_duration_sends_nothing(self):

@@ -3,6 +3,7 @@ import json
 import numpy as np
 from PIL import Image
 from casino.common.paths import ROOT, ASSETS
+from casino.common.fast_mode import MODE_BOX
 from casino.common.vision import crop, normalize, segments
 from casino.games.roulette.vision import counter_mask
 
@@ -22,6 +23,9 @@ REFERENCES = {
 def build():
     folder = ASSETS/'roulette'
     folder.mkdir(exist_ok=True)
+    for mode, source in [('off', 'initial'), ('on', 'on')]:
+        with Image.open(ROOT/'captures'/f'roulette_fast_mode_{source}.png') as im:
+            im.crop(MODE_BOX).save(folder/f'fast_mode_{mode}.png')
     manifest = []
     for name, (source, box) in REFERENCES.items():
         with Image.open(ROOT/'captures'/f'{source}.png') as im:

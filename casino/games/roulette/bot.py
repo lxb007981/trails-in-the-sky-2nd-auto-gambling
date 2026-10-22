@@ -5,6 +5,7 @@ import math
 import time
 from pathlib import Path
 from casino.common.paths import ROOT
+from casino.common.fast_mode import FastModeVision
 from casino.common.window import GameWindow, RunLock, Stopped
 from casino.common.vision import RecognitionError
 from casino.games.roulette.vision import RouletteVision
@@ -17,6 +18,8 @@ class RouletteBot:
         self.logdir = Path(logdir or ROOT/'logs'/('roulette_'+time.strftime('%Y%m%d_%H%M%S')))
         self.logdir.mkdir(parents=True, exist_ok=True)
         self.last = None
+        self.fast_mode = False
+        self.poll_interval = .25
 
     def event(self, event, **data):
         row = dict(time=time.time(), event=event, **data)
@@ -39,8 +42,35 @@ class RouletteBot:
             previous = value
             if value is not None and count >= 4:
                 return self.last, state, value[1]
-            time.sleep(.25)
+            time.sleep(self.poll_interval)
         raise RecognitionError(f'Timed out waiting for {states}; state={state}; {detail}')
+
+    def prepare_fast_mode(self):
+        vision = FastModeVision(ROOT/'assets'/'roulette')
+        self.last = self.game.grab()
+        self.last.save(self.logdir/'startup.png')
+        mode = vision.fast_mode(self.last)
+        self.event('mode_detected', initial_fast_mode=mode)
+        if mode == 'off':
+            self.game.press('ctrl')
+
+        def confirmed(image):
+            if vision.fast_mode(image) != 'on':
+                raise RecognitionError('Fast mode is not enabled')
+            return 'on'
+
+        self.wait({'menu','prompt','again','board'}, confirmed, timeout=5)
+        self.last.save(self.logdir/'fast_mode_confirmed.png')
+        self.fast_mode = True
+        self.poll_interval = .12
+        self.event('fast_mode', action='pressed_ctrl' if mode == 'off' else 'already_on',
+                   confirmed=True, hold_seconds=.06, rest_seconds=.12, poll_seconds=.12)
+
+    def press(self, key):
+        if self.fast_mode:
+            self.game.press(key, hold=.06, rest=.12)
+        else:
+            self.game.press(key)
 
     def board(self):
         for _ in range(4):
@@ -54,13 +84,13 @@ class RouletteBot:
                 a = im.getpixel((630,320))
                 if not (a[0]>180 and a[1]>140 and a[2]<190):
                     raise RecognitionError('Select Start before running')
-            self.game.press('enter')
+            self.press('enter')
         raise RecognitionError('Cannot reach board')
 
     def finish(self):
-        self.game.press('escape')
+        self.press('escape')
         self.wait({'cancel'})
-        self.game.press('enter')
+        self.press('enter')
         self.wait({'menu'})
         self.last.save(self.logdir/'final_menu.png')
 
@@ -68,6 +98,7 @@ class RouletteBot:
         if not math.isfinite(minutes) or minutes <= 0:
             raise ValueError('minutes must be finite and positive')
         start = time.monotonic()
+        self.prepare_fast_mode()
         initial = before = self.board()
         rounds = 0
         self.event('start', balance=initial, minutes=minutes, stake=10, selection=[1,2,3])
@@ -79,15 +110,15 @@ class RouletteBot:
             # Recheck deadline immediately before committing funds.
             if time.monotonic()-start >= minutes*60:
                 break
-            self.game.press('enter')
+            self.press('enter')
             _,_,account = self.wait({'board'}, self.vision.account)
             if account != (before-10,10):
                 raise RecognitionError(f'Bet debit mismatch: {account}, before={before}')
-            self.game.press('tab')
+            self.press('tab')
             self.event('spin', round=rounds+1)
             im,_,result = self.wait({'settlement'}, self.vision.settlement)
             im.save(self.logdir/f'{rounds+1:04d}_settlement.png')
-            self.game.press('enter')
+            self.press('enter')
             # Acknowledge next-round prompt only after it has finished rendering.
             self.wait({'again'})
             after = self.board()

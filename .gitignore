@@ -137,6 +137,8 @@ logs/
 !/captures/bj_double_777.png
 
 # Roulette rules, asset sources and numeric regression fixtures.
+!/captures/roulette_fast_mode_initial.png
+!/captures/roulette_fast_mode_on.png
 !/captures/rt_001_menu.png
 !/captures/rt_003_rules.png
 !/captures/rt_006_betrules.png
