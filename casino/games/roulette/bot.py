@@ -4,7 +4,7 @@ import json
 import math
 import time
 from pathlib import Path
-from casino.common.paths import ROOT
+from casino.common.paths import ROOT, ASSETS
 from casino.common.fast_mode import FastModeVision
 from casino.common.window import GameWindow, RunLock, Stopped
 from casino.common.vision import RecognitionError
@@ -51,7 +51,7 @@ class RouletteBot:
         raise RecognitionError(f'Timed out waiting for {states}; state={state}; {detail}')
 
     def prepare_fast_mode(self):
-        vision = FastModeVision(ROOT/'assets'/'roulette')
+        vision = FastModeVision(ASSETS/'roulette')
         self.last = self.game.grab()
         self.last.save(self.logdir/'startup.png')
         mode = vision.fast_mode(self.last)

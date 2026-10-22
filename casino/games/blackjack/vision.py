@@ -13,7 +13,7 @@ from casino.games.blackjack.rules import hand
 class BlackjackVision:
     def __init__(self):
         self.templates = load_templates(ASSETS)
-        folder = ROOT/'assets'/'blackjack'
+        folder = ASSETS/'blackjack'
         for path in folder.glob('*_rotated.npy'):
             self.templates['suits'].setdefault(path.stem.split('_')[0],[]).append(np.load(path))
         for path in folder.glob('*_rank.npy'):

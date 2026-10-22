@@ -13,7 +13,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from PIL import Image, ImageTk
 
-from casino.common.paths import ROOT
+from casino.common.paths import ROOT, ASSETS
 
 
 GAMES = {
@@ -37,6 +37,9 @@ def parse_minutes(value):
 def build_command(game, minutes):
     module = GAMES[game][0]
     executable = Path(sys.executable)
+    if getattr(sys, 'frozen', False):
+        return [str(executable), '--bot', module,
+                '--run', '--focus', '--minutes', str(parse_minutes(minutes))]
     if executable.name.lower() == 'pythonw.exe':
         executable = executable.with_name('python.exe')
     return [str(executable), '-u', '-m', f'casino.games.{module}.bot',
@@ -54,7 +57,7 @@ class CasinoApp:
         self.duration = 0
         self.stopping = False
         root.title('空之轨迹 2nd · 全自动赌圣')
-        root.iconbitmap(default=str(ROOT / 'assets' / 'sora_2.ico'))
+        root.iconbitmap(default=str(ASSETS / 'sora_2.ico'))
         root.geometry('820x600')
         root.minsize(820, 560)
         style = ttk.Style(root)
@@ -108,7 +111,7 @@ class CasinoApp:
 
     def update_hint(self, _event=None):
         self.hint.set(GAMES[self.game.get()][1])
-        path = ROOT / 'assets' / 'start_screens' / f'{GAMES[self.game.get()][0]}.png'
+        path = ASSETS / 'start_screens' / f'{GAMES[self.game.get()][0]}.png'
         try:
             with Image.open(path) as source:
                 self.reference_image = source.copy()
@@ -159,6 +162,7 @@ class CasinoApp:
         env['CASINO_STOP_FILE'] = str(Path(self.stop_dir.name) / 'stop')
         env['PYTHONIOENCODING'] = 'utf-8'
         try:
+            ROOT.mkdir(parents=True, exist_ok=True)
             self.process = subprocess.Popen(command, cwd=ROOT, env=env,
                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 text=True, encoding='utf-8', errors='replace',
