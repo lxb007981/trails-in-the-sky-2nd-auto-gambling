@@ -33,10 +33,10 @@ EXE 的日志和缓存分别保存在 `%LOCALAPPDATA%\Sora2AutoGambling\logs` �
 ```powershell
 python -m pip install -r requirements-build.txt
 python -m unittest -v
-python -m PyInstaller --noconfirm --clean --onefile --console --hide-console hide-early --name Sora2AutoGambling --paths . --collect-submodules casino --add-data "assets:assets" --icon assets/sora_2.ico packaging/launcher.py
+python -m PyInstaller --noconfirm --clean --onefile --windowed --name Sora2AutoGambling --paths . --collect-submodules casino --add-data "assets:assets" --icon assets/sora_2.ico packaging/launcher.py
 & .\dist\Sora2AutoGambling.exe --smoke-test
 ```
 
-打包入口同时支持 GUI 与 `--bot` 子进程分发，保留标准输出以供 GUI 收集日志，
-使用隐藏控制台选项避免桌面启动时一直显示控制台。`--smoke-test` 加载识别资源、
+打包入口同时支持 GUI 与 `--bot` 子进程分发，通过 Windows 重定向句柄恢复标准输出以供 GUI 收集日志，
+使用 `--windowed` 从根源上避免启动时创建控制台窗口及其闪现。`--smoke-test` 加载识别资源、
 创建 GUI 并逐个运行四种玩法的 `--help`，不会操作游戏。

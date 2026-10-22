@@ -31,10 +31,10 @@ jobs:
       - name: Run offline tests
         run: python -m unittest -v
       - name: Build standalone EXE
-        # Keep console streams for worker logs; hide the console on desktop launch.
+        # The launcher restores redirected worker logs without a console window.
         run: >-
-          python -m PyInstaller --noconfirm --clean --onefile --console
-          --hide-console hide-early --name Sora2AutoGambling
+          python -m PyInstaller --noconfirm --clean --onefile --windowed
+          --name Sora2AutoGambling
           --paths . --collect-submodules casino --add-data "assets:assets"
           --icon assets/sora_2.ico packaging/launcher.py
       - name: Check bundled GUI and workers
