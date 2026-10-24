@@ -159,6 +159,8 @@ class CasinoApp:
         root.after(100, self.poll)
 
     def update_hint(self, _event=None):
+        # Drop the combobox's text selection highlight after choosing a game.
+        self.game_input.selection_clear()
         self.hint.set(GAMES[self.game.get()][1])
         path = ASSETS / 'start_screens' / f'{GAMES[self.game.get()][0]}.png'
         try:
