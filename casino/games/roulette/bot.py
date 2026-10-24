@@ -12,7 +12,8 @@ from casino.games.roulette.vision import RouletteVision
 
 
 class RouletteBot:
-    def __init__(self, game, logdir=None):
+    def __init__(self, game, logdir=None, dev=False):
+        self.dev = dev
         self.lock = RunLock()
         self.game, self.vision = game, RouletteVision()
         self.logdir = Path(logdir or ROOT/'logs'/('roulette_'+time.strftime('%Y%m%d_%H%M%S')))
@@ -22,6 +23,7 @@ class RouletteBot:
         self.poll_interval = .25
 
     def event(self, event, **data):
+        data = {k: v for k, v in data.items() if v is not None}
         row = dict(time=time.time(), event=event, **data)
         text = json.dumps(row, ensure_ascii=False)
         with (self.logdir/'events.jsonl').open('a', encoding='utf-8') as f:
@@ -77,9 +79,12 @@ class RouletteBot:
         else:
             self.game.press(key)
 
+    def read_account(self, im):
+        return self.vision.account(im) if self.dev else (None, self.vision.bet_amount(im))
+
     def board(self):
         for _ in range(4):
-            im, state, account = self.wait({'menu','prompt','again','board'}, self.vision.account)
+            im, state, account = self.wait({'menu','prompt','again','board'}, self.read_account)
             if state == 'board':
                 if account[1] != 0 or not self.vision.street_selected(im):
                     raise RecognitionError('Expected empty board with initial 1/2/3 street selected')
@@ -109,15 +114,15 @@ class RouletteBot:
         self.event('start', balance=initial, minutes=minutes, stake=10, selection=[1,2,3])
         reason = 'duration_reached'
         while time.monotonic()-start < minutes*60:
-            if before < 10:
+            if self.dev and before < 10:
                 reason = 'insufficient_balance'
                 break
             # Recheck deadline immediately before committing funds.
             if time.monotonic()-start >= minutes*60:
                 break
             self.press('enter')
-            _,_,account = self.wait({'board'}, self.vision.account)
-            if account != (before-10,10):
+            _,_,account = self.wait({'board'}, self.read_account)
+            if account[1] != 10 or (self.dev and account[0] != before-10):
                 raise RecognitionError(f'Bet debit mismatch: {account}, before={before}')
             self.press('tab')
             self.event('spin', round=rounds+1)
@@ -127,8 +132,8 @@ class RouletteBot:
             # Acknowledge next-round prompt only after it has finished rendering.
             self.wait({'again'})
             after = self.board()
-            expected = before-10+result[2]
-            if after != expected:
+            expected = before-10+result[2] if self.dev else None
+            if self.dev and after != expected:
                 raise RecognitionError(f'Balance mismatch: {after}, expected {expected}')
             rounds += 1
             self.event('round', round=rounds, before=before, after=after,
@@ -136,7 +141,7 @@ class RouletteBot:
             before = after
         self.finish()
         self.event('complete', rounds=rounds, initial_balance=initial, final_balance=before,
-                   net=before-initial, elapsed_seconds=time.monotonic()-start, stop_reason=reason)
+                   net=before-initial if self.dev else None, elapsed_seconds=time.monotonic()-start, stop_reason=reason)
 
 
 def main():
@@ -144,17 +149,18 @@ def main():
     parser.add_argument('--run', action='store_true')
     parser.add_argument('--focus', action='store_true')
     parser.add_argument('--minutes', type=float, default=20)
+    parser.add_argument('--dev', action='store_true', help='Read balances and verify per-round profit')
     args = parser.parse_args()
     if not math.isfinite(args.minutes) or args.minutes <= 0:
         parser.error('--minutes must be finite and positive')
     bot = None
     try:
-        bot = RouletteBot(GameWindow(args.focus))
+        bot = RouletteBot(GameWindow(args.focus),dev=args.dev)
         if args.run:
             bot.run(args.minutes)
         else:
             im = bot.game.grab()
-            print(bot.vision.state(im), bot.vision.account(im))
+            print(bot.vision.state(im), bot.read_account(im))
         return 0
     except (Stopped, RecognitionError, KeyboardInterrupt) as error:
         if bot:

@@ -11,7 +11,8 @@ from casino.games.poker.vision import Vision, RecognitionError, ROOT
 from casino.games.poker.strategy import Strategy, parse_card, categories, PAYOUTS
 
 class Bot:
-    def __init__(self, game, logdir=None, wheel=True):
+    def __init__(self, game, logdir=None, wheel=True, dev=False):
+        self.dev = dev
         self.lock = RunLock()
         self.game, self.vision = game, Vision()
         for kind, expected in [('ranks',set('23456789TJQKA')),('suits',set('CDHS')),('digits',set('0123456789'))]:
@@ -26,6 +27,7 @@ class Bot:
         self.fast_mode = False
 
     def event(self, kind, **data):
+        data = {k: v for k, v in data.items() if v is not None}
         row = dict(time=time.time(),event=kind,**data)
         with (self.logdir/'events.jsonl').open('a',encoding='utf-8') as f:
             f.write(json.dumps(row,ensure_ascii=False)+'\n')
@@ -88,6 +90,10 @@ class Bot:
         else:
             self.game.press(key)
 
+    def read_bet(self, im):
+        balance = self.vision.balance(im) if self.dev else None
+        return balance, self.vision.bet_amount(im)
+
     def to_bet(self):
         im,state = self.wait({'menu','bet_prompt','bet'})
         if state == 'menu':
@@ -99,14 +105,13 @@ class Bot:
             self.press('enter')
         elif state == 'bet_prompt':
             self.press('enter')
-        return self.wait({'bet'},predicate=lambda im:(self.vision.balance(im),self.vision.remaining(im)))
+        return self.wait({'bet'},predicate=self.read_bet)
 
     def set_bet(self, target):
         for _ in range(12):
-            im,(balance,remaining) = self.wait({'bet'},predicate=lambda im:(self.vision.balance(im),self.vision.remaining(im)))
-            current = balance-remaining
+            im,(balance,current) = self.wait({'bet'},predicate=self.read_bet)
             if not 1<=current<=10:
-                raise RecognitionError(f'Invalid bet from balances: {balance}, {remaining}')
+                raise RecognitionError(f'Invalid bet amount: {current}')
             if current == target:
                 return balance
             if target == 10:
@@ -181,11 +186,11 @@ class Bot:
             if time.monotonic() >= deadline:
                 reason = 'duration_reached'
                 break
-            if balance < bet:
+            if self.dev and balance < bet:
                 reason = 'insufficient_balance'
                 break
             before = self.set_bet(bet)
-            if before != balance:
+            if self.dev and before != balance:
                 raise RecognitionError('Balance changed outside this run')
             # Setting/recognizing the bet can take time. Recheck before committing.
             if time.monotonic() >= deadline:
@@ -197,8 +202,8 @@ class Bot:
             self.press('enter')
             result = self.play_hand(f'round_{n:03d}')
             _,(balance,_) = self.to_bet()
-            expected = before-bet+bet*result['payout']
-            if balance != expected:
+            expected = before-bet+bet*result['payout'] if self.dev else None
+            if self.dev and balance != expected:
                 raise RecognitionError(f'Balance mismatch: expected {expected}, observed {balance}')
             completed += 1
             self.event('round',round=n,bet=bet,before=before,after=balance,**result)
@@ -209,7 +214,7 @@ class Bot:
         final_image,_ = self.wait({'menu'})
         final_image.save(self.logdir/'final_menu.png')
         self.event('complete',rounds=completed,initial_balance=initial_balance,
-                   final_balance=balance,net=balance-initial_balance,
+                   final_balance=balance,net=balance-initial_balance if self.dev else None,
                    stop_reason=reason,elapsed_seconds=time.monotonic()-started)
 
 def main():
@@ -220,6 +225,7 @@ def main():
     p.add_argument('--minutes',type=float,default=15,
                    help='Run for this many minutes, then finish the current hand (default: 15)')
     p.add_argument('--no-wheel',action='store_true',help='Do not count A2345 as a straight')
+    p.add_argument('--dev', action='store_true', help='Read balances and verify per-round profit')
     args = p.parse_args()
     if not math.isfinite(args.minutes) or args.minutes <= 0:
         p.error('Minutes must be finite and positive')
@@ -235,10 +241,12 @@ def main():
                 cards,_ = v.hand(im)
                 info.update(cards=cards, strategy=Strategy(wheel=not args.no_wheel).evaluate(cards))
             elif state=='bet':
-                info.update(balance=v.balance(im),bet=v.balance(im)-v.remaining(im))
+                info.update(bet=v.bet_amount(im))
+                if args.dev:
+                    info['balance'] = v.balance(im)
             print(json.dumps(info,ensure_ascii=False,indent=2))
             return 0
-        bot = Bot(game,wheel=not args.no_wheel)
+        bot = Bot(game,wheel=not args.no_wheel,dev=args.dev)
         bot.run(minutes=args.minutes,bet=args.bet)
         return 0
     except (Stopped,RecognitionError,KeyboardInterrupt) as e:

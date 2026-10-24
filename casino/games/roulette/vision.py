@@ -63,24 +63,28 @@ class RouletteVision:
         return True
 
     def account(self, im):
-        def read(y):
-            # The italic counter uses fixed 11.5 px advances. Projection splits
-            # disconnected strokes inside 0/3, so read complete character cells.
-            text = ''
-            for i in range(7, -1, -1):
-                mask = counter_mask(im, (int(1213-(i+1)*11.5), y, int(1213-i*11.5), y+24))
-                if mask.sum() > 4:
-                    try:
-                        text += match(mask, self.account_digits, .16, .025)[0]
-                    except RecognitionError as error:
-                        field = 'balance' if y == 55 else 'bet'
-                        raise RecognitionError(f'{field} digit {i} from right: {error}') from error
-                elif text:
-                    raise RecognitionError('Gap in account digits')
-            if not text:
-                raise RecognitionError('Missing account digits')
-            return int(text)
-        return read(55), read(89)
+        return self.counter(im, 55), self.bet_amount(im)
+
+    def bet_amount(self, im):
+        return self.counter(im, 89)
+
+    def counter(self, im, y):
+        # The italic counter uses fixed 11.5 px advances. Projection splits
+        # disconnected strokes inside 0/3, so read complete character cells.
+        text = ''
+        for i in range(7, -1, -1):
+            mask = counter_mask(im, (int(1213-(i+1)*11.5), y, int(1213-i*11.5), y+24))
+            if mask.sum() > 4:
+                try:
+                    text += match(mask, self.account_digits, .16, .025)[0]
+                except RecognitionError as error:
+                    field = 'balance' if y == 55 else 'bet'
+                    raise RecognitionError(f'{field} digit {i} from right: {error}') from error
+            elif text:
+                raise RecognitionError('Gap in account digits')
+        if not text:
+            raise RecognitionError('Missing account digits')
+        return int(text)
 
     def settlement(self, im):
         win = self.score(im, 'win') < .025

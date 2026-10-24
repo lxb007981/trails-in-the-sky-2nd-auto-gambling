@@ -44,3 +44,12 @@ def match(mask, templates, threshold=.20, margin=.045):
     if not scores or scores[0][0] > threshold or (len(scores)>1 and scores[1][0]-scores[0][0]<margin):
         raise RecognitionError(f'Uncertain glyph: {scores[:3]}')
     return scores[0][1], scores[0][0]
+
+
+def read_bet_amount(im, templates):
+    # Ignore grey leading zeroes and the cursor frame around the input field.
+    mask = (crop(im, (688,349,771,364)).min(2) < 100).astype(np.uint8)
+    chunks = segments(mask)
+    if not chunks:
+        raise RecognitionError('Missing bet digits')
+    return int(''.join(match(c, templates, .20, .025)[0] for c in chunks))

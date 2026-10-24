@@ -6,6 +6,7 @@ from casino.games.poker.bot import Bot
 class LimitTests(unittest.TestCase):
     def make_bot(self, balances, payouts):
         bot = Bot.__new__(Bot)
+        bot.dev = True
         bot.wheel = True
         bot.prepare_fast_mode = MagicMock()
         bot.to_bet = MagicMock(side_effect=[(None,(b,b-1)) for b in balances])

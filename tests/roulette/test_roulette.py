@@ -70,6 +70,7 @@ class VisionTests(unittest.TestCase):
 class RunTests(unittest.TestCase):
     def bot(self):
         bot = RouletteBot.__new__(RouletteBot)
+        bot.dev = True
         bot.game = Mock()
         bot.vision = Mock()
         bot.event = Mock()

@@ -15,7 +15,8 @@ from casino.games.blackjack.rules import payout, RATES, hand
 
 
 class BlackjackBot:
-    def __init__(self, game, logdir=None, dealer_stand=17, special_ties=True):
+    def __init__(self, game, logdir=None, dealer_stand=17, special_ties=True, dev=False):
+        self.dev = dev
         self.lock = RunLock()
         self.game = game
         self.vision = BlackjackVision()
@@ -27,6 +28,7 @@ class BlackjackBot:
         self.fast_mode = False
 
     def event(self, event, **data):
+        data = {k: v for k, v in data.items() if v is not None}
         row = dict(time=time.time(),event=event,**data)
         with (self.logdir/'events.jsonl').open('a',encoding='utf-8') as f:
             f.write(json.dumps(row,ensure_ascii=False)+'\n')
@@ -88,11 +90,14 @@ class BlackjackBot:
         else:
             self.game.press(key)
 
+    def read_bet(self, im):
+        return self.vision.bet(im) if self.dev else (None, self.vision.bet_amount(im))
+
     def to_bet(self):
         for _ in range(5):
             im, state, _ = self.wait({'menu','bet_prompt','again','bet'})
             if state == 'bet':
-                return self.wait({'bet'},lambda im,s:self.vision.bet(im))[2]
+                return self.wait({'bet'},lambda im,s:self.read_bet(im))[2]
             if state == 'menu' and not self.vision.start_selected(im):
                 raise RecognitionError('Select Start before running')
             before = self.signature(im,state)
@@ -103,14 +108,14 @@ class BlackjackBot:
     def set_bet(self, target):
         # A/D move the decimal cursor; pressing beyond its boundary jumps to
         # maximum/minimum. Three A/D presses reliably select 100/1 respectively.
-        _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.vision.bet(im))
-        if balance < target:
+        _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.read_bet(im))
+        if balance is not None and balance < target:
             return balance
         if current != target:
-            endpoint = 100 if target > 50 and balance >= 100 else 1
+            endpoint = 100 if target > 50 and (balance is None or balance >= 100) else 1
             for _ in range(3):
                 self.press('a' if endpoint == 100 else 'd')
-            _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.vision.bet(im))
+            _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.read_bet(im))
             if current != endpoint:
                 raise RecognitionError(f'Bet shortcut produced {current}, expected {endpoint}')
             if current != target:
@@ -118,14 +123,14 @@ class BlackjackBot:
                     # From hundreds to units; a third D would reset to 1.
                     self.press('d')
                     self.press('d')
-                    _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.vision.bet(im))
+                    _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.read_bet(im))
                     if current != 100:
                         raise RecognitionError('Moving the bet cursor changed the amount')
                 for _ in range(100):
                     if current == target:
                         break
                     self.press('w' if current < target else 's')
-                    _,_,(balance,new) = self.wait({'bet'},lambda im,s:self.vision.bet(im))
+                    _,_,(balance,new) = self.wait({'bet'},lambda im,s:self.read_bet(im))
                     if abs(new-current) != 1:
                         raise RecognitionError(f'Unexpected bet step: {current} -> {new}')
                     current = new
@@ -184,7 +189,7 @@ class BlackjackBot:
                 if upcard is not None and up != upcard:
                     raise RecognitionError('Dealer upcard changed')
                 upcard, old_cards, pending_hit = up, cards, False
-                choice = self.strategy.evaluate(cards,up,can_double=(before >= 2*bet))
+                choice = self.strategy.evaluate(cards,up,can_double=(before is None or before >= 2*bet))
                 self.event('decision',cards=cards,dealer=up,**choice)
                 action = choice['action']
                 doubled = action == 'double'
@@ -225,11 +230,11 @@ class BlackjackBot:
             if time.monotonic() >= deadline:
                 reason = 'duration_reached'
                 break
-            if balance < bet:
+            if self.dev and balance < bet:
                 reason = 'insufficient_balance'
                 break
             observed = self.set_bet(bet)
-            if observed != balance:
+            if self.dev and observed != balance:
                 raise RecognitionError('Balance changed outside this run')
             if time.monotonic() >= deadline:
                 reason = 'duration_reached'
@@ -237,15 +242,15 @@ class BlackjackBot:
             self.press('enter')
             result = self.play_hand(f'round_{completed+1:03d}',bet,balance)
             after,_ = self.to_bet()
-            expected = balance-result['bet']+result['received']
-            if after != expected:
+            expected = balance-result['bet']+result['received'] if self.dev else None
+            if self.dev and after != expected:
                 raise RecognitionError(f'Balance mismatch: expected {expected}, observed {after}')
             completed += 1
             self.event('round',round=completed,before=balance,after=after,**result)
             balance = after
         self.finish()
         self.event('complete',rounds=completed,initial_balance=initial,final_balance=balance,
-                   net=balance-initial,stop_reason=reason,elapsed_seconds=time.monotonic()-start)
+                   net=balance-initial if self.dev else None,stop_reason=reason,elapsed_seconds=time.monotonic()-start)
 
 
 def main():
@@ -256,6 +261,7 @@ def main():
     parser.add_argument('--bet',type=int,choices=range(1,101),default=100)
     parser.add_argument('--dealer-stand',type=int,choices=(17,18),default=17)
     parser.add_argument('--ordinary-special-ties',action='store_true',help='Treat equal totals as draws, even with a bonus hand')
+    parser.add_argument('--dev', action='store_true', help='Read balances and verify per-round profit')
     args = parser.parse_args()
     if not math.isfinite(args.minutes) or args.minutes <= 0:
         parser.error('--minutes must be finite and positive')
@@ -271,10 +277,12 @@ def main():
                 cards,up = v.observation(im)
                 info.update(cards=cards,dealer=up,decision=Strategy(args.dealer_stand,not args.ordinary_special_ties).evaluate(cards,up,False))
             elif state == 'bet':
-                info.update(zip(('balance','bet'),v.bet(im)))
+                info.update(bet=v.bet_amount(im))
+                if args.dev:
+                    info['balance'] = v.bet(im)[0]
             print(json.dumps(info,ensure_ascii=False,indent=2))
             return 0
-        bot = BlackjackBot(game,dealer_stand=args.dealer_stand,special_ties=not args.ordinary_special_ties)
+        bot = BlackjackBot(game,dealer_stand=args.dealer_stand,special_ties=not args.ordinary_special_ties,dev=args.dev)
         bot.run(args.minutes,args.bet)
         return 0
     except (Stopped,RecognitionError,KeyboardInterrupt) as error:

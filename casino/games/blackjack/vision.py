@@ -1,4 +1,5 @@
 """Blackjack-only state and card recognition; uncertain frames never authorize input."""
+from casino.common.vision import read_bet_amount
 import json
 import cv2
 import numpy as np
@@ -160,6 +161,12 @@ class BlackjackVision:
         if len(cards) != n or not 2 <= n <= 7 or hand(cards)[0] != total or len(set(cards)) != n:
             raise RecognitionError(f'Uncertain final hand: {cards}, {n}, {total}')
         return cards, dealer_total
+
+    def bet_amount(self, im):
+        amount = read_bet_amount(im, self.templates['digits'])
+        if not 1 <= amount <= 100:
+            raise RecognitionError(f'Invalid bet amount: {amount}')
+        return amount
 
     def bet(self, im):
         balance = self.number(im,(620,255,775,280),'black')

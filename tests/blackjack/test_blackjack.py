@@ -196,6 +196,7 @@ class VisionTests(unittest.TestCase):
 class ControlTests(unittest.TestCase):
     def bot(self):
         b = BlackjackBot.__new__(BlackjackBot)
+        b.dev = True
         b.strategy = Strategy()
         b.prepare_fast_mode = Mock()
         b.poll_interval = .20

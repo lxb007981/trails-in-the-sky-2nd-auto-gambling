@@ -1,4 +1,5 @@
 """Conservative screenshot recognition using locally collected glyphs."""
+from casino.common.vision import read_bet_amount
 from pathlib import Path
 import json
 from functools import lru_cache
@@ -140,6 +141,12 @@ class Vision:
         region = crop(im,(595,308,685,331))
         yellow = (region[:,:,0]>190)&(region[:,:,1]>160)&(region[:,:,2]<130)
         return float(yellow.mean())>.4
+
+    def bet_amount(self, im):
+        amount = read_bet_amount(im, self.templates['digits'])
+        if not 1 <= amount <= 10:
+            raise RecognitionError(f'Invalid bet amount: {amount}')
+        return amount
 
     def balance(self, im):
         return self.number(im, (620,255,775,280))

@@ -201,11 +201,11 @@ python -m venv .venv
 | 玩法 | 日志目录 | 主要内容 |
 | --- | --- | --- |
 | 梭哈 | `logs/日期时间/` | `events.jsonl`、每局初始牌、保留牌和结果截图 |
-| 21 点 | `logs/blackjack_日期时间/` | 每步截图、决策期望值、结算倍率、逐局余额和总收益 |
+| 21 点 | `logs/blackjack_日期时间/` | 每步截图、决策期望值、结算倍率（开发模式额外记录逐局余额和总收益） |
 | 轮盘 | `logs/roulette_日期时间/` | `events.jsonl`、逐局结算截图和最终菜单截图 |
 | 角子机 | `logs/slots_日期时间/` | `startup.png`、`events.jsonl`，每 30 秒记录累计按键数 |
 
-梭哈的 `complete` 事件包含初始余额、最终余额、净收益、实际耗时 `elapsed_seconds` 和停止原因 `stop_reason`（`duration_reached` / `insufficient_balance`）。21 点完成后保存 `final_menu.png`。梭哈和 21 点的异常现场截图为 `stopped.png`，可用于排查识别问题。角子机正常结束记录 `complete`，中断记录 `stopped`。
+21 点、梭哈和轮盘默认不识别当前筹码，也不核对余额变化；下注额仍会单独识别和校验。命令行添加 `--dev` 可开启开发模式，读取余额、验证逐局收益，并记录初始余额、最终余额和净收益。正常模式的 `complete` 事件记录局数、耗时 `elapsed_seconds` 和停止原因 `stop_reason`，不报告未经验证的余额或净收益。余额不足的提前判断仅在开发模式启用；正常模式下无法达到目标下注额或游戏无法继续时，会因下注校验失败或状态等待超时而停止。21 点完成后保存 `final_menu.png`。梭哈和 21 点的异常现场截图为 `stopped.png`，可用于排查识别问题。角子机正常结束记录 `complete`，中断记录 `stopped`。
 
 ### 离线收益模拟
 
