@@ -32,10 +32,15 @@ class VisionTests(unittest.TestCase):
             self.assertEqual(self.vision.settlement(im),(10,0,0))
 
     def test_menu_balances_after_blackjack(self):
-        for balance in (96972, 25011):
+        for balance in (96972, 25011, 23811):
             with self.subTest(balance=balance), Image.open(ROOT/'captures'/f'rt_account_{balance}.png') as im:
                 self.assertEqual(self.vision.state(im), 'menu')
                 self.assertEqual(self.vision.account(im), (balance, 0))
+
+    def test_prompt_balance_with_three_in_thousands_column(self):
+        with Image.open(ROOT/'captures/rt_prompt_23811.png') as im:
+            self.assertEqual(self.vision.state(im), 'prompt')
+            self.assertEqual(self.vision.account(im), (23811, 0))
 
     def test_win_settlement_uses_different_table(self):
         with Image.open(ROOT/'captures/rt_win.png') as im:

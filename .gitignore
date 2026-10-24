@@ -10,6 +10,8 @@ dist/
 /captures/*
 !/captures/rt_account_96972.png
 !/captures/rt_account_25011.png
+!/captures/rt_account_23811.png
+!/captures/rt_prompt_23811.png
 !/captures/poker_fast_mode_initial.png
 !/captures/poker_fast_mode_on.png
 !/captures/poker_fast_five_digits.png

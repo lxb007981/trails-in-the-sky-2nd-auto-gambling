@@ -48,7 +48,8 @@ def build():
     # The original calibration mostly exercises digits in the tens column.
     # Half-pixel advances rasterize the same digit differently in other cells.
     # Keep real samples from balances that previously stalled menu recovery.
-    for name, value in [('rt_account_96972', '96972'), ('rt_account_25011', '25011')]:
+    for name, value in [('rt_account_96972', '96972'), ('rt_account_25011', '25011'),
+                        ('rt_account_23811', '23811')]:
         with Image.open(ROOT/'captures'/f'{name}.png') as im:
             for i, d in enumerate(reversed(value)):
                 box = (int(1213-(i+1)*11.5),55,int(1213-i*11.5),79)
