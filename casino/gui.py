@@ -15,6 +15,7 @@ from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
 
 from casino.common.paths import ROOT, ASSETS
+from casino.gui_theme import JADE, SAGE, configure_theme
 
 
 PROJECT_URL = 'https://github.com/lxb007981/trails-in-the-sky-2nd-auto-gambling'
@@ -66,109 +67,90 @@ class CasinoApp:
         scale = max(1.0, float(root.tk.call('tk', 'scaling')) / (96 / 72))
         root.geometry(f'{round(980 * scale)}x{round(850 * scale)}')
         root.minsize(round(940 * scale), round(830 * scale))
-        root.configure(background='#f2f5f4')
-        root.option_add('*TCombobox*Listbox.font', ('Microsoft YaHei UI', 11))
-        style = ttk.Style(root)
-        style.theme_use('clam')
-        style.configure('.', font=('Microsoft YaHei UI', 11), background='#f2f5f4', foreground='#243b35')
-        style.configure('TFrame', background='#f2f5f4')
-        style.configure('TLabel', background='#f2f5f4')
-        style.configure('Muted.TLabel', foreground='#657870')
-        style.configure('Title.TLabel', font=('Microsoft YaHei UI', 24, 'bold'))
-        style.configure('Card.TFrame', background='#ffffff')
-        style.configure('Card.TLabel', background='#ffffff')
-        style.configure('Section.TLabel', background='#ffffff', font=('Microsoft YaHei UI', 12, 'bold'))
-        style.configure('Caption.TLabel', background='#ffffff', foreground='#657870', font=('Microsoft YaHei UI', 10))
-        style.configure('Hint.TFrame', background='#eaf2ee')
-        style.configure('Hint.TLabel', background='#eaf2ee', foreground='#375c4c')
-        style.configure('TButton', padding=(18, 10), background='#ffffff', foreground='#375c4c',
-                        borderwidth=0, focusthickness=2, focuscolor='#a6cbbb')
-        style.map('TButton', background=[('disabled', '#e9eeeb'), ('pressed', '#dce9e2'), ('active', '#eaf2ee')],
-                  foreground=[('disabled', '#8c9b94')])
-        style.configure('Primary.TButton', background='#24634c', foreground='#ffffff', font=('Microsoft YaHei UI', 11, 'bold'))
-        style.map('Primary.TButton', background=[('disabled', '#dce5df'), ('pressed', '#194b39'), ('active', '#30785d')],
-                  foreground=[('disabled', '#85978c'), ('!disabled', '#ffffff')])
-        for name in ('TEntry', 'TCombobox'):
-            style.configure(name, padding=9, fieldbackground='#f7faf8', foreground='#243b35',
-                            bordercolor='#d6e1da', lightcolor='#d6e1da', darkcolor='#d6e1da', arrowcolor='#375c4c')
-            style.map(name, fieldbackground=[('disabled', '#edf1ee'), ('readonly', '#f7faf8')],
-                      foreground=[('disabled', '#8c9b94')], bordercolor=[('focus', '#438669')])
-        style.configure('Vertical.TScrollbar', background='#d6e1da', troughcolor='#f7faf8', borderwidth=0, arrowsize=12)
-        body = ttk.Frame(root, padding=28)
+        self.scale = scale
+        fonts = configure_theme(root, scale)
+        unit = lambda value: round(value * scale)
+        body = ttk.Frame(root, padding=unit(24))
         body.pack(fill='both', expand=True)
         project_link = ttk.Label(body, text=f'项目地址：{PROJECT_URL}', cursor='hand2',
-                                 foreground='#24634c', font=('Microsoft YaHei UI', 10, 'underline'),
+                                 foreground=JADE[11], font=fonts['link'],
                                  takefocus=True)
-        project_link.pack(side='bottom', pady=(12, 0))
+        project_link.pack(side='bottom', pady=(unit(12), 0))
         for event in ('<Button-1>', '<Return>', '<space>'):
             project_link.bind(event, lambda _event: webbrowser.open(PROJECT_URL))
+        project_link.bind('<FocusIn>', lambda _event: project_link.configure(background=JADE[4]))
+        project_link.bind('<FocusOut>', lambda _event: project_link.configure(background=SAGE[1]))
         heading = ttk.Frame(body)
-        heading.pack(fill='x', pady=(0, 22))
+        heading.pack(fill='x', pady=(0, unit(24)))
         ttk.Label(heading, text='自动刷筹码', style='Title.TLabel').pack(anchor='w')
-        ttk.Label(heading, text='选择游戏与时长，然后开始。', style='Muted.TLabel').pack(anchor='w', pady=(4, 0))
+        ttk.Label(heading, text='选择游戏与时长，然后开始。', style='Muted.TLabel').pack(anchor='w', pady=(unit(4), 0))
         top = ttk.Frame(body)
         top.pack(fill='x')
-        reference = ttk.Frame(top, style='Card.TFrame', padding=18)
-        reference.pack(side='right', fill='y', padx=(18, 0))
+        top.columnconfigure(0, weight=1)
+        top.rowconfigure(0, weight=1)
+        reference = ttk.Frame(top, style='Card.TFrame', padding=unit(20))
+        reference.grid(row=0, column=1, sticky='nsew', padx=(unit(16), 0))
         ttk.Label(reference, text='起始画面', style='Section.TLabel').pack(anchor='w')
         self.reference_label = ttk.Label(reference, cursor='hand2', style='Card.TLabel')
-        self.reference_label.pack(pady=(12, 10))
+        self.reference_label.pack(pady=(unit(12), unit(12)))
         self.reference_label.bind('<Button-1>', self.show_reference)
         ttk.Label(reference, text='点击图片放大查看', style='Caption.TLabel').pack(anchor='w')
-        settings = ttk.Frame(top, style='Card.TFrame', padding=22)
-        settings.pack(side='left', fill='both', expand=True)
+        settings = ttk.Frame(top, style='Card.TFrame', padding=unit(20))
+        settings.grid(row=0, column=0, sticky='nsew')
         ttk.Label(settings, text='运行设置', style='Section.TLabel').pack(anchor='w')
-        ttk.Label(settings, text='先在游戏中进入对应的小游戏界面', style='Caption.TLabel').pack(anchor='w', pady=(6, 20))
+        ttk.Label(settings, text='先在游戏中进入对应的小游戏界面', style='Caption.TLabel').pack(anchor='w', pady=(unit(8), unit(20)))
         controls = ttk.Frame(settings, style='Card.TFrame')
         controls.pack(fill='x')
         controls.columnconfigure((0, 1), weight=1, uniform='input')
         ttk.Label(controls, text='本次游戏', style='Card.TLabel').grid(row=0, column=0, sticky='w')
-        ttk.Label(controls, text='持续时间（分钟）', style='Card.TLabel').grid(row=0, column=1, padx=(18, 0), sticky='w')
+        ttk.Label(controls, text='持续时间（分钟）', style='Card.TLabel').grid(row=0, column=1, padx=(unit(16), 0), sticky='w')
         self.game = tk.StringVar(value='梭哈')
         self.minutes = tk.StringVar(value='10')
         self.game_input = ttk.Combobox(controls, textvariable=self.game, values=list(GAMES), state='readonly', width=12,
-                                       font=('Microsoft YaHei UI', 11))
-        self.game_input.grid(row=1, column=0, pady=(10, 0), sticky='ew')
-        self.time_input = ttk.Entry(controls, textvariable=self.minutes, width=12, font=('Microsoft YaHei UI', 11))
-        self.time_input.grid(row=1, column=1, padx=(18, 0), pady=(10, 0), sticky='ew')
-        ttk.Label(settings, text='支持小数时长，例如 0.5 分钟', style='Caption.TLabel').pack(anchor='w', pady=(16, 0))
+                                       font=fonts['body'])
+        self.game_input.grid(row=1, column=0, pady=(unit(8), 0), sticky='ew')
+        self.time_input = ttk.Entry(controls, textvariable=self.minutes, width=12, font=fonts['body'])
+        self.time_input.grid(row=1, column=1, padx=(unit(16), 0), pady=(unit(8), 0), sticky='ew')
+        ttk.Label(settings, text='支持小数时长，例如 0.5 分钟', style='Caption.TLabel').pack(anchor='w', pady=(unit(16), 0))
         self.hint = tk.StringVar()
-        guidance = ttk.Frame(body, style='Hint.TFrame', padding=(18, 14))
-        guidance.pack(fill='x', pady=(18, 14))
-        ttk.Label(guidance, text='开始前', style='Hint.TLabel', font=('Microsoft YaHei UI', 11, 'bold')).pack(anchor='w')
-        hint_label = ttk.Label(guidance, textvariable=self.hint, style='Hint.TLabel', wraplength=780)
-        hint_label.pack(fill='x', pady=(6, 0))
-        guidance.bind('<Configure>', lambda event: hint_label.configure(wraplength=max(1, event.width - 36)))
+        guidance = ttk.Frame(body, style='Hint.TFrame', padding=unit(20))
+        guidance.pack(fill='x', pady=(unit(16), unit(12)))
+        ttk.Label(guidance, text='开始前', style='Hint.TLabel', font=fonts['strong']).pack(anchor='w')
+        hint_label = ttk.Label(guidance, textvariable=self.hint, style='Hint.TLabel', wraplength=unit(780))
+        hint_label.pack(fill='x', pady=(unit(8), 0))
+        guidance.bind('<Configure>', lambda event: hint_label.configure(wraplength=max(1, event.width - unit(40))))
         self.game_input.bind('<<ComboboxSelected>>', self.update_hint)
         self.update_hint()
         ttk.Label(body, text='游戏分辨率须为窗口化 1280×720。开始后自动切到游戏，请保持游戏在前台。',
-                  style='Muted.TLabel').pack(anchor='w', padx=18)
+                  style='Muted.TLabel').pack(anchor='w', padx=unit(20))
         ttk.Label(body, text='按 F8、切换窗口或点击停止均会中断；牌类和轮盘到时结算当前局后退出。',
-                  style='Muted.TLabel').pack(anchor='w', padx=18, pady=(4, 0))
+                  style='Muted.TLabel').pack(anchor='w', padx=unit(20), pady=(unit(4), 0))
         buttons = ttk.Frame(body)
-        buttons.pack(fill='x', pady=18)
+        buttons.pack(fill='x', pady=unit(16))
         self.start_button = ttk.Button(buttons, text='开始游玩', style='Primary.TButton', command=self.start)
         self.start_button.pack(side='left')
         self.stop_button = ttk.Button(buttons, text='停止', command=self.stop, state='disabled')
-        self.stop_button.pack(side='left', padx=12)
+        self.stop_button.pack(side='left', padx=unit(12))
         self.status = tk.StringVar(value='就绪')
-        ttk.Label(buttons, textvariable=self.status, style='Muted.TLabel').pack(side='left', padx=(6, 0))
-        log_card = ttk.Frame(body, style='Card.TFrame', padding=(18, 14))
+        ttk.Label(buttons, textvariable=self.status, style='Muted.TLabel').pack(side='left', padx=(unit(4), 0))
+        log_card = ttk.Frame(body, style='Card.TFrame', padding=unit(20))
         log_card.pack(fill='both', expand=True)
         log_heading = ttk.Frame(log_card, style='Card.TFrame')
-        log_heading.pack(fill='x', pady=(0, 10))
+        log_heading.pack(fill='x', pady=(0, unit(12)))
         ttk.Label(log_heading, text='运行日志', style='Section.TLabel').pack(side='left')
         ttk.Button(log_heading, text='打开日志目录', command=self.open_logs).pack(side='right')
         log_body = ttk.Frame(log_card, style='Card.TFrame')
         log_body.pack(fill='both', expand=True)
-        self.output = tk.Text(log_body, height=6, state='disabled', wrap='word', font=('Consolas', 11),
-                              background='#f7faf8', foreground='#40584c', relief='flat', borderwidth=0,
-                              padx=14, pady=12, selectbackground='#c6e1d3', selectforeground='#183c2b',
-                              highlightthickness=1, highlightbackground='#e5ece7', highlightcolor='#438669')
+        self.output = tk.Text(log_body, height=6, state='disabled', wrap='word', font=fonts['mono'],
+                              background=SAGE[3], foreground=SAGE[12], relief='flat', borderwidth=0,
+                              padx=unit(12), pady=unit(12), selectbackground=JADE[5], selectforeground=JADE[12],
+                              insertbackground=SAGE[12], highlightthickness=0)
         scrollbar = ttk.Scrollbar(log_body, orient='vertical', command=self.output.yview)
         scrollbar.pack(side='right', fill='y')
         self.output.configure(yscrollcommand=scrollbar.set)
         self.output.pack(side='left', fill='both', expand=True)
+        self.output.bind('<FocusIn>', lambda _event: self.output.configure(background=JADE[3]))
+        self.output.bind('<FocusOut>', lambda _event: self.output.configure(background=SAGE[3]))
         root.protocol('WM_DELETE_WINDOW', self.close)
         root.after(100, self.poll)
 
@@ -179,7 +161,7 @@ class CasinoApp:
             with Image.open(path) as source:
                 self.reference_image = source.copy()
             preview = self.reference_image.copy()
-            preview.thumbnail((288, 162), Image.Resampling.LANCZOS)
+            preview.thumbnail((round(288 * self.scale), round(162 * self.scale)), Image.Resampling.LANCZOS)
             self.reference_photo = ImageTk.PhotoImage(preview, master=self.root)
             self.reference_label.configure(image=self.reference_photo, text='')
         except OSError:
@@ -192,6 +174,7 @@ class CasinoApp:
         popup = tk.Toplevel(self.root)
         popup.title(f'{self.game.get()} · 起始界面示例')
         popup.transient(self.root)
+        popup.configure(background=SAGE[1])
         picture = self.reference_image.copy()
         picture.thumbnail((min(1280, self.root.winfo_screenwidth() - 100),
                            min(720, self.root.winfo_screenheight() - 160)),
