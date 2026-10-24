@@ -25,7 +25,7 @@ def configure_theme(root, scale):
         'strong': ('Microsoft YaHei UI', -round(18 * scale), 'bold'),
         'caption': ('Microsoft YaHei UI', -round(16 * scale)),
         'link': ('Microsoft YaHei UI', -round(16 * scale), 'underline'),
-        'title': ('Microsoft YaHei UI', -round(26 * scale), 'bold'),
+        'title': ('Microsoft YaHei UI', -round(32 * scale), 'bold'),
         'mono': ('Consolas', -round(18 * scale)),
     }
     root.configure(background=SAGE[1])

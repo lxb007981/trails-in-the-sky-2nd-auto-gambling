@@ -141,7 +141,7 @@ class CasinoApp:
         ttk.Button(log_heading, text='打开日志目录', command=self.open_logs).pack(side='right')
         log_body = ttk.Frame(log_card, style='Card.TFrame')
         log_body.pack(fill='both', expand=True)
-        self.output = tk.Text(log_body, height=6, state='disabled', wrap='word', font=fonts['mono'],
+        self.output = tk.Text(log_body, height=5, state='disabled', wrap='word', font=fonts['mono'],
                               background=SAGE[3], foreground=SAGE[12], relief='flat', borderwidth=0,
                               padx=unit(12), pady=unit(12), selectbackground=JADE[5], selectforeground=JADE[12],
                               insertbackground=SAGE[12], highlightthickness=0)
@@ -151,6 +151,10 @@ class CasinoApp:
         self.output.pack(side='left', fill='both', expand=True)
         self.output.bind('<FocusIn>', lambda _event: self.output.configure(background=JADE[3]))
         self.output.bind('<FocusOut>', lambda _event: self.output.configure(background=SAGE[3]))
+        # Include five complete log lines and all surrounding controls at this DPI.
+        root.update_idletasks()
+        default_height = max(unit(850), root.winfo_reqheight())
+        root.geometry(f'{unit(980)}x{default_height}')
         root.protocol('WM_DELETE_WINDOW', self.close)
         root.after(100, self.poll)
 
