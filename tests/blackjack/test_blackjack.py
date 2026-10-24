@@ -157,6 +157,16 @@ class VisionTests(unittest.TestCase):
         with self.assertRaises(RecognitionError):
             self.v.final_hand(im,known)
 
+    def test_third_card_rotated_club(self):
+        im = self.sample('bj_regression_third_club')
+        self.assertEqual(self.v.state(im),'hand')
+        self.assertEqual(self.v.observation(im),(('2S','AD','9C'),'5D'))
+        # Totals alone must not authorize a hand with an unreadable new card.
+        from PIL import ImageDraw
+        ImageDraw.Draw(im).rectangle((855,410,897,461),fill='white')
+        with self.assertRaises(RecognitionError):
+            self.v.observation(im)
+
     def test_live_two_aces_count_as_seven(self):
         im = self.sample('bj_regression_two_aces')
         self.assertEqual(self.v.observation(im),(('2S','AD','3D','AS'),'7D'))

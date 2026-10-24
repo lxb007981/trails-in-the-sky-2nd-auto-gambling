@@ -34,6 +34,12 @@ def build():
     with Image.open(ROOT/'captures'/'bj_005_hand.png') as im:
         im.crop((409,89,428,101)).save(out/'triangle.png')
     (out/'manifest.json').write_text(json.dumps(entries,indent=2),encoding='utf-8')
+    # Verified 9C corner in the three-card layout; its rotated club is too
+    # close to a spade with only the upright templates.
+    with Image.open(ROOT/'captures'/'bj_regression_third_club.png') as im:
+        a = rotated(im)[937:951,815:828]
+        mask = ((a.max(2)<125) | ((a[:,:,0]>100)&(a[:,:,1]<90)&(a[:,:,2]<110)))
+        np.save(out/'C_rotated.npy',normalize(mask))
     # Verified AS corner after the fifth card shifts/rotates the layout.
     with Image.open(ROOT/'captures'/'bj_regression_five_two_aces.png') as im:
         a = rotated(im)[843:857,826:838]
