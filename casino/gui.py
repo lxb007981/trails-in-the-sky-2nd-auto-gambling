@@ -10,10 +10,14 @@ import tempfile
 import threading
 import time
 import tkinter as tk
+import webbrowser
 from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
 
 from casino.common.paths import ROOT, ASSETS
+
+
+PROJECT_URL = 'https://github.com/lxb007981/trails-in-the-sky-2nd-auto-gambling'
 
 
 GAMES = {
@@ -92,6 +96,12 @@ class CasinoApp:
         style.configure('Vertical.TScrollbar', background='#d6e1da', troughcolor='#f7faf8', borderwidth=0, arrowsize=12)
         body = ttk.Frame(root, padding=28)
         body.pack(fill='both', expand=True)
+        project_link = ttk.Label(body, text=f'项目地址：{PROJECT_URL}', cursor='hand2',
+                                 foreground='#24634c', font=('Microsoft YaHei UI', 10, 'underline'),
+                                 takefocus=True)
+        project_link.pack(side='bottom', pady=(12, 0))
+        for event in ('<Button-1>', '<Return>', '<space>'):
+            project_link.bind(event, lambda _event: webbrowser.open(PROJECT_URL))
         heading = ttk.Frame(body)
         heading.pack(fill='x', pady=(0, 22))
         ttk.Label(heading, text='自动刷筹码', style='Title.TLabel').pack(anchor='w')
