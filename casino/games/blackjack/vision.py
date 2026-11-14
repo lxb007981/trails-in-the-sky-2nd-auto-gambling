@@ -57,6 +57,8 @@ class BlackjackVision:
         if self.score(im,'settlement') < .035:
             return 'settlement' if self.dialogue_ready(im) else 'animation'
         if self.dialogue_ready(im):
+            if self.score(im,'bet_prompt_200') < .035:
+                return 'bet_prompt'
             for state in ('bet_prompt','again','cancel','deposit','open','stand_dialog'):
                 if self.score(im,state) < .035:
                     return state
@@ -164,7 +166,7 @@ class BlackjackVision:
 
     def bet_amount(self, im):
         amount = read_bet_amount(im, self.templates['digits'])
-        if not 1 <= amount <= 100:
+        if not 1 <= amount <= 200:
             raise RecognitionError(f'Invalid bet amount: {amount}')
         return amount
 
@@ -172,7 +174,7 @@ class BlackjackVision:
         balance = self.number(im,(620,255,775,280),'black')
         remaining = self.number(im,(620,436,775,461),'black')
         amount = balance-remaining
-        if not 1 <= amount <= 100 or remaining < 0:
+        if not 1 <= amount <= 200 or remaining < 0:
             raise RecognitionError(f'Invalid bet: balance={balance}, remaining={remaining}')
         return balance, amount
 

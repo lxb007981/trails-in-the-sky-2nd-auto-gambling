@@ -107,26 +107,27 @@ class BlackjackBot:
 
     def set_bet(self, target):
         # A/D move the decimal cursor; pressing beyond its boundary jumps to
-        # maximum/minimum. Three A/D presses reliably select 100/1 respectively.
+        # maximum/minimum. Three A/D presses select the current maximum/minimum.
         _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.read_bet(im))
         if balance is not None and balance < target:
             return balance
         if current != target:
-            endpoint = 100 if target > 50 and (balance is None or balance >= 100) else 1
+            use_maximum = target > 50 and (balance is None or balance >= 100)
             for _ in range(3):
-                self.press('a' if endpoint == 100 else 'd')
+                self.press('a' if use_maximum else 'd')
             _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.read_bet(im))
-            if current != endpoint:
-                raise RecognitionError(f'Bet shortcut produced {current}, expected {endpoint}')
+            endpoint = current if use_maximum else 1
+            if (use_maximum and (current not in (100, 200) or current < target)) or current != endpoint:
+                raise RecognitionError(f'Bet shortcut produced {current}, requested {target}')
             if current != target:
-                if endpoint == 100:
+                if use_maximum:
                     # From hundreds to units; a third D would reset to 1.
                     self.press('d')
                     self.press('d')
                     _,_,(balance,current) = self.wait({'bet'},lambda im,s:self.read_bet(im))
-                    if current != 100:
+                    if current != endpoint:
                         raise RecognitionError('Moving the bet cursor changed the amount')
-                for _ in range(100):
+                for _ in range(200):
                     if current == target:
                         break
                     self.press('w' if current < target else 's')
@@ -216,13 +217,19 @@ class BlackjackBot:
         im,_,_ = self.wait({'menu'})
         im.save(self.logdir/'final_menu.png')
 
-    def run(self, minutes=15, bet=100):
-        if not math.isfinite(minutes) or minutes <= 0 or not 1 <= bet <= 100:
-            raise ValueError('Require finite positive minutes and bet 1..100')
+    def run(self, minutes=15, bet=None):
+        if not math.isfinite(minutes) or minutes <= 0 or (bet is not None and not 1 <= bet <= 200):
+            raise ValueError('Require finite positive minutes and bet 1..200 (or None for table maximum)')
         start = time.monotonic()
         deadline = start+minutes*60
         self.prepare_fast_mode()
         initial,_ = self.to_bet()
+        if bet is None:
+            for _ in range(3):
+                self.press('a')
+            _,_,(_,bet) = self.wait({'bet'},lambda im,s:self.read_bet(im))
+            if bet not in (100, 200):
+                raise RecognitionError(f'Cannot confirm table maximum: {bet}')
         balance, completed = initial, 0
         self.event('start',balance=initial,bet=bet,minutes=minutes,dealer_stand=self.strategy.dealer_stand,
                    special_ties=self.strategy.special_ties,model='independent_draws')
@@ -258,7 +265,7 @@ def main():
     parser.add_argument('--run',action='store_true')
     parser.add_argument('--focus',action='store_true')
     parser.add_argument('--minutes',type=float,default=15)
-    parser.add_argument('--bet',type=int,choices=range(1,101),default=100)
+    parser.add_argument('--bet',type=int,choices=range(1,201),default=None,help='Default: current table maximum (100 or 200)')
     parser.add_argument('--dealer-stand',type=int,choices=(17,18),default=17)
     parser.add_argument('--ordinary-special-ties',action='store_true',help='Treat equal totals as draws, even with a bonus hand')
     parser.add_argument('--dev', action='store_true', help='Read balances and verify per-round profit')

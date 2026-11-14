@@ -10,6 +10,7 @@ from casino.common.paths import ROOT
 REFERENCES = {
     'menu': ('bj_033_menu', (574, 335, 709, 428)),
     'bet': ('bj_031_bet', (480, 245, 615, 470)),
+    'bet_prompt_200': ('bj_late_prompt', (250, 62, 565, 122)),
     'bet_prompt': ('blackjack_001_menu', (250, 62, 565, 122)),
     'again': ('bj_030_prompt', (250, 62, 405, 88)),
     'cancel': ('bj_032_cancel', (250, 62, 426, 88)),
@@ -50,6 +51,11 @@ def build():
         assert len(chunks) == 3
         for label,chunk in zip('250',chunks):
             np.save(out/f'{label}_white.npy',normalize(chunk))
+    with Image.open(ROOT/'captures'/'bj_regression_600.png') as im:
+        im.crop((435,472,914,500)).save(out/'settlement_600_sample.png')
+        chunks = segments((crop(im,(770,472,914,500)).min(2)>180).astype(np.uint8))
+        assert len(chunks) == 3
+        np.save(out/'6_white.npy',normalize(chunks[0]))
     with Image.open(ROOT/'captures'/'bj_regression_red_five.png') as im:
         a = rotated(im)[913:932,816:830]
         mask = ((a.max(2)<125) | ((a[:,:,0]>100)&(a[:,:,1]<90)&(a[:,:,2]<110)))

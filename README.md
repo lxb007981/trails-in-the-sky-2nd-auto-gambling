@@ -34,7 +34,7 @@
 
 ### 21 点
 
-支持 Hit、Stand、Double Down。加倍只在初始两张且余额足够时考虑，另加一份下注，因此每局下注 100 枚时总投入可能为 200。余额不足额外下注时只考虑 Hit/Stand。识别不确定或对账失败时停止输入。
+支持 Hit、Stand、Double Down。加倍只在初始两张且余额足够时考虑，另加一份下注，默认自动适配当前下注上限（前期 100 枚、后期 200 枚），加倍后总投入分别可能为 200、400 枚。余额不足额外下注时只考虑 Hit/Stand。识别不确定或对账失败时停止输入。
 
 | 牌型 | 返还倍率 |
 | --- | --- |
@@ -152,10 +152,10 @@ python -m venv .venv
 在“开始”已选中的菜单、下注提示、继续提示或下注弹窗启动：
 
 ```powershell
-.\.venv\Scripts\python.exe -m casino.games.blackjack.bot --run --focus --minutes 30 --bet 100
+.\.venv\Scripts\python.exe -m casino.games.blackjack.bot --run --focus --minutes 30
 ```
 
-`--minutes` 默认 15，`--bet` 默认 100，支持 1～100。选择 100 枚时连按三次 A，并读取持有数与剩余数的差额确认下注金额后才提交。
+`--minutes` 默认 15；不指定 `--bet` 时连按三次 A，识别当前上限并按 100 或 200 枚下注。也可用 `--bet` 指定 1～200（不能超过当前游戏上限），提交前校验实际下注额。
 
 规则配置参数：
 

@@ -109,6 +109,25 @@ class VisionTests(unittest.TestCase):
         with self.assertRaises(RecognitionError):
             self.v.observation(self.sample('bj_006_hand'))
 
+    def test_both_bet_prompt_limits(self):
+        # Assemble real dialogue crops with the ready arrow, without depending
+        # on development captures or runtime logs.
+        for name in ('bet_prompt', 'bet_prompt_200'):
+            with self.subTest(prompt=name):
+                im = Image.new('RGB', (1280,720))
+                for reference in ('dialog_panel', name):
+                    box, pixels = self.v.refs[reference]
+                    im.paste(Image.fromarray(pixels.astype('uint8')), box[:2])
+                im.paste(Image.fromarray(self.v.triangle), (585,124))
+                self.assertEqual(self.v.state(im), 'bet_prompt')
+
+    def test_late_blackjack_settlement_600(self):
+        from casino.common.paths import ASSETS
+        im = Image.new('RGB', (1280,720))
+        with Image.open(ASSETS/'blackjack'/'settlement_600_sample.png') as sample:
+            im.paste(sample, (435,472))
+        self.assertEqual(self.v.settlement(im), (200,3,600))
+
     def test_unknown_frame(self):
         self.assertEqual(self.v.state(Image.new('RGB',(1280,720))),'unknown')
 
@@ -297,6 +316,31 @@ class ControlTests(unittest.TestCase):
         b.wait.side_effect = [(None,'bet',(1000,99)),(None,'bet',(1000,1))]
         BlackjackBot.set_bet(b,1)
         self.assertEqual([c.args[0] for c in b.press.call_args_list],['d','d','d'])
+
+    def test_auto_table_maximum(self):
+        for maximum in (100, 200):
+            with self.subTest(maximum=maximum):
+                b = self.bot()
+                b.to_bet.side_effect = [(1000,1),(1000-maximum,1)]
+                b.play_hand.return_value = dict(bet=maximum,received=0)
+                b.wait = Mock(return_value=(None, 'bet', (1000, maximum)))
+                with patch('casino.games.blackjack.bot.time.monotonic', side_effect=[0,0,0,61,62]):
+                    b.run(1)
+                b.set_bet.assert_called_once_with(maximum)
+                b.play_hand.assert_called_once_with('round_001', maximum, 1000)
+
+    def test_late_table_and_early_limit(self):
+        b = self.bot()
+        b.wait = Mock(side_effect=[(None,'bet',(1000,n)) for n in (1,200)])
+        BlackjackBot.set_bet(b,200)
+        self.assertEqual([c.args[0] for c in b.press.call_args_list], ['a']*3)
+        b.wait.side_effect = [(None,'bet',(1000,n)) for n in (1,100)]
+        with self.assertRaises(RecognitionError):
+            BlackjackBot.set_bet(b,200)
+        b.press.reset_mock()
+        b.wait.side_effect = [(None,'bet',(1000,n)) for n in (1,200,200,*range(199,99,-1))]
+        BlackjackBot.set_bet(b,100)
+        self.assertEqual([c.args[0] for c in b.press.call_args_list], ['a']*3+['d']*2+['s']*100)
 
     def test_double_sevens_real_settlement(self):
         v = BlackjackVision()
